@@ -1,0 +1,57 @@
+package com.imagegallery.service;
+
+import com.imagegallery.model.User;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
+import org.springframework.stereotype.Component;
+
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+
+/**
+ * Handles the post-OAuth2 redirect after Google authenticates the user.
+ * Active only when a Google client registration is configured
+ * (feature profile).
+ */
+@Component
+@ConditionalOnBean(ClientRegistrationRepository.class)
+public class OAuth2AuthSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
+
+    private final AuthService authService;
+
+    @Value("${gallery.frontend.url:http://localhost:3000}")
+    private String frontendUrl;
+
+    public OAuth2AuthSuccessHandler(AuthService authService) {
+        this.authService = authService;
+    }
+
+    @Override
+    public void onAuthenticationSuccess(HttpServletRequest request,
+                                        HttpServletResponse response,
+                                        Authentication authentication) throws IOException {
+        OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
+        Map<String, Object> attrs = oauthToken.getPrincipal().getAttributes();
+
+        String googleId = String.valueOf(attrs.get("sub"));
+        String email    = String.valueOf(attrs.get("email"));
+
+        User user = authService.upsertGoogleUser(googleId, email);
+        // Issues refresh cookie and returns access token
+        var authResponse = authService.issueTokenPair(user, response);
+
+        String redirect = frontendUrl + "/auth/callback?token="
+                + URLEncoder.encode(authResponse.accessToken(), StandardCharsets.UTF_8)
+                + "&email=" + URLEncoder.encode(email, StandardCharsets.UTF_8);
+
+        getRedirectStrategy().sendRedirect(request, response, redirect);
+    }
+}

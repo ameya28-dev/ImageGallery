@@ -1,0 +1,109 @@
+spring:
+  application:
+    name: image-gallery
+  jpa:
+    open-in-view: false
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+server:
+  port: 8080
+
+gallery:
+  thumbnail:
+    width: 400
+    height: 400
+  # Owner credentials — provisioned at startup (BCrypt-hashed automatically)
+  admin:
+    email: ${GALLERY_ADMIN_EMAIL:admin@example.com}
+    password: ${GALLERY_ADMIN_PASSWORD:changeme}
+  # JWT signing secret — base64-encoded, minimum 32 bytes (256 bits)
+  # Generate with: openssl rand -base64 32
+  jwt:
+    secret: ${GALLERY_JWT_SECRET:ZGV2LW9ubHktc2VjcmV0LWNoYW5nZS10aGlzLWluLXByb2Q=}
+  # Frontend URL used for OAuth2 redirect (feature profile)
+  frontend:
+    url: ${GALLERY_FRONTEND_URL:http://localhost:3000}
+
+# Anthropic API key for visual content search (image description via Claude Haiku).
+# Obtain at: https://console.anthropic.com → API Keys
+# Leave blank to disable auto-description (images won't be described on upload;
+# existing descriptions still searched; visual search returns filename/tag matches only).
+ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:}
+
+---
+# ----------------------------------------------------
+# LOCAL PROFILE (SQLite & Local Storage)
+# ----------------------------------------------------
+spring:
+  config:
+    activate:
+      on-profile: local
+  datasource:
+    url: jdbc:sqlite:./data/gallery.db
+    driver-class-name: org.sqlite.JDBC
+  jpa:
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    hibernate:
+      ddl-auto: update
+  flyway:
+    enabled: false
+
+gallery:
+  storage:
+    type: local
+  images-path: ${GALLERY_IMAGES_PATH:data/images/}
+  thumbnails-path: ${GALLERY_THUMBNAILS_PATH:data/thumbnails/}
+
+---
+# ----------------------------------------------------
+# FEATURE PROFILE (PostgreSQL & AWS S3)
+# ----------------------------------------------------
+spring:
+  config:
+    activate:
+      on-profile: feature
+  datasource:
+    url: jdbc:postgresql://localhost:5432/imagegallery
+    username: TODO_DB_USERNAME
+    password: TODO_DB_PASSWORD
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+gallery:
+  storage:
+    type: s3
+  s3:
+    bucket-name: TODO_S3_BUCKET_NAME
+    region: us-east-1
+    access-key: TODO_AWS_ACCESS_KEY
+    secret-key: TODO_AWS_SECRET_KEY
+
+---
+# ----------------------------------------------------
+# GOOGLE-AUTH PROFILE — activate alongside feature
+# to enable "Sign in with Google"
+# Run: mvn spring-boot:run -Dspring-boot.run.profiles=feature,google-auth
+# Requires GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET env vars
+# ----------------------------------------------------
+spring:
+  config:
+    activate:
+      on-profile: google-auth
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope: email, profile
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"

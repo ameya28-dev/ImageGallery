@@ -1,0 +1,11 @@
+target/
+# Runtime data folder (runtime-generated images/thumbnails/db, not baked into image)
+data/
+*.db
+*.db-shm
+*.db-wal
+# IDE files
+.idea/
+*.iml
+.vscode/
+*.log

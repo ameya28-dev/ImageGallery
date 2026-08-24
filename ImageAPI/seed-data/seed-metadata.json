@@ -1,0 +1,42 @@
+[
+  {
+    "filename": "2560x1600-px-Batgirl-Batman-Batwoman-Nightwing-Red-Hood-1056648-wallhere.com.jpg",
+    "tags": ["Batman"],
+    "favourite": false
+  },
+  {
+    "filename": "missile_prod.png",
+    "tags": ["Batman", "Missile"],
+    "favourite": true
+  },
+  {
+    "filename": "wallpaperflare.com_wallpaper.jpg",
+    "tags": ["Batman"],
+    "favourite": true
+  },
+  {
+    "filename": "wallpaperflare.com_wallpaper_1.jpg",
+    "tags": ["Batman", "TheFountain", "Wallpaper"],
+    "favourite": true
+  },
+  {
+    "filename": "wallpaperflare.com_wallpaper__2_.jpg",
+    "tags": ["Batman", "Wallpaper"],
+    "favourite": true
+  },
+  {
+    "filename": "wallpaperflare.com_wallpaper__3_.jpg",
+    "tags": ["Wallpaper", "Windows"],
+    "favourite": false
+  },
+  {
+    "filename": "wp3087307-spider-man-into-the-spider-verse-wallpapers.jpg",
+    "tags": ["Batman", "Wallpaper"],
+    "favourite": true
+  },
+  {
+    "filename": "wallpaperflare.com_wallpaper_4.jpg",
+    "tags": [],
+    "favourite": false
+  }
+]

@@ -1,0 +1,30 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Attach: Backend (JDWP 5005)",
+      "request": "attach",
+      "hostName": "localhost",
+      "port": 5005,
+      "projectName": "image-gallery"
+    },
+    {
+      "type": "node",
+      "name": "Attach: Frontend (Node 9229)",
+      "request": "attach",
+      "address": "localhost",
+      "port": 9229,
+      "localRoot": "${workspaceFolder}/ImageWebPage",
+      "remoteRoot": "/app",
+      "restart": true,
+      "skipFiles": ["<node_internals>/**"]
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Attach: Backend + Frontend",
+      "configurations": ["Attach: Backend (JDWP 5005)", "Attach: Frontend (Node 9229)"]
+    }
+  ]
+}

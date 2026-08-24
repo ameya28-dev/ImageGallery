@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker image *)",
+      "Bash(curl -s http://localhost:8000/health)",
+      "Bash(curl -s http://localhost:3000)",
+      "Bash(curl -s http://localhost:8000/api/images)",
+      "Bash(curl -I http://localhost:8000/api/images)",
+      "Bash(curl -I http://localhost:8000/api/images/1/thumbnail)",
+      "Bash(curl -v http://localhost:8000/api/images/1/thumbnail)",
+      "Bash(rm -f /home/ameya/projects/agentic/ImageGallery/2026-05-18-205248-*.txt)",
+      "Bash(rm -f /home/ameya/projects/agentic/ImageGallery/ImageWebPage/2026-05-18-*.txt)",
+      "Bash(grep -v \"^\\\\\\\\.$\\\\\\\\|^\\\\\\\\.\\\\\\\\.\\\\\\\\$\")",
+      "Bash(grep -v \"^\\\\.$\\\\|^\\\\.\\\\.$\")"
+    ]
+  }
+}

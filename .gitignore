@@ -1,0 +1,68 @@
+# ─────────────────────────────────────────────────────────────────────
+#  .gitignore — ImageGallery
+#  Root-level file covers all sub-projects:
+#    ImageAPI/        Spring Boot backend (Maven)
+#    ImageWebPage/    Next.js frontend
+#    docs/            Markdown documentation
+# ─────────────────────────────────────────────────────────────────────
+
+# ── Session logs (Claude Code) ───────────────────────────────────────
+*.txt
+
+# ── OS ───────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ── IDE — JetBrains / IntelliJ ───────────────────────────────────────
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# ── IDE — VS Code ────────────────────────────────────────────────────
+# Ignore user-specific settings, keep debugging configs
+.vscode/settings.json
+.vscode/extensions.json
+# Launch configurations are committed (team debugging setup)
+
+# ── Java / Maven (ImageAPI) ──────────────────────────────────────────
+ImageAPI/target/
+
+# JVM crash logs
+hs_err_pid*
+replay_pid*
+
+# ── SQLite database files (if JAR runs outside Docker) ──────────────────────
+# In Docker (local profile), data lives in a named volume, not on the host filesystem.
+# These patterns catch any .db files if someone runs the JAR outside Docker.
+*.db
+*.db-shm
+*.db-wal
+# Explicitly allow seed-data/ — contains git-tracked demo images + metadata
+!ImageAPI/seed-data/
+
+# ── Node / Next.js (ImageWebPage) ────────────────────────────────────
+ImageWebPage/node_modules/
+ImageWebPage/.next/
+ImageWebPage/out/
+ImageWebPage/.vercel/
+# Next.js auto-generated TypeScript reference file — do not commit
+ImageWebPage/next-env.d.ts
+ImageWebPage/*.tsbuildinfo
+
+# ── Secrets & environment ─────────────────────────────────────────────
+# .env.example / .env.local.example are safe to commit (no real secrets).
+.env
+.env.local
+.env*.local
+!.env.example
+!.env.local.example
+
+# ── Logs ─────────────────────────────────────────────────────────────
+*.log
+logs/
+spring.log
