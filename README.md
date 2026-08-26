@@ -45,6 +45,24 @@ cp .env.example .env
 
 ### 2. Start the Application
 
+**Option A: Use Convenience Scripts (Recommended)**
+
+```bash
+# Start the app (builds images on first run)
+./scripts/local/up.sh
+
+# In another terminal, watch logs
+./scripts/local/logs.sh
+
+# Stop the app
+./scripts/local/down.sh
+
+# Full reset (delete all data)
+./scripts/local/reset.sh
+```
+
+**Option B: Manual Docker Commands**
+
 ```bash
 # First time (will build images and seed demo data)
 docker compose up --build
@@ -54,21 +72,20 @@ docker compose up
 
 # Run in background
 docker compose up -d
-```
 
-### 3. Open in Browser
-
-- **Gallery UI**: http://localhost:3000
-- **API Docs**: http://localhost:8000/api/images (returns JSON)
-
-### 4. Stop Services
-
-```bash
+# Stop services
 docker compose down
 
 # Clean everything (removes volumes + cached images)
 docker compose down -v
 ```
+
+See [**scripts/README.md**](./scripts/README.md) for all available convenience scripts (debugging, shell access, status monitoring, etc.).
+
+### 3. Open in Browser
+
+- **Gallery UI**: http://localhost:3000
+- **API Docs**: http://localhost:8000/api/images (returns JSON)
 
 ## 📖 Usage
 
@@ -175,23 +192,36 @@ NEXT_PUBLIC_GOOGLE_AUTH=false               # Feature flag
 
 ## 🐛 Debugging
 
-### Backend (Java/Spring Boot)
+### Interactive Shell Access
+
+```bash
+# Enter backend container shell
+./scripts/local/shell-backend.sh
+
+# Enter frontend container shell
+./scripts/local/shell-frontend.sh
+
+# Check logs in real-time
+./scripts/local/logs.sh backend    # backend only
+./scripts/local/logs.sh frontend   # frontend only
+./scripts/local/logs.sh            # all services
+```
+
+### Debugger Attachment (VS Code)
 
 Open VS Code and select **Run** → **Start Debugging** (Ctrl+F5), then choose:
-- **"Attach: Backend (JDWP 5005)"**
+- **"Attach: Backend (JDWP 5005)"** — Debug Java/Spring Boot; set breakpoints in `ImageAPI/src/main/java/`
+- **"Attach: Frontend (Node 9229)"** — Debug Node.js; set breakpoints in `ImageWebPage/src/`
+- **"Attach: Backend + Frontend"** — Debug both simultaneously
 
-Set breakpoints in `ImageAPI/src/main/java/` and they'll trigger.
+### Debug with SQLite UI
 
-### Frontend (Node.js)
+```bash
+# Start with SQLite Web UI (runs on http://localhost:8085)
+./scripts/local/debug.sh
+```
 
-Same debugging interface, select:
-- **"Attach: Frontend (Node 9229)"**
-
-Set breakpoints in `ImageWebPage/src/` and they'll trigger.
-
-### Both Simultaneously
-
-Select **"Attach: Backend + Frontend"** to debug both at once.
+Inspect the SQLite database visually while the app runs.
 
 ## 📚 Documentation
 

@@ -15,7 +15,14 @@
    # Leave ANTHROPIC_API_KEY empty unless you want AI image description + NL search
    ```
 
-2. **Start Docker containers**:
+2. **Start Docker containers** (choose one):
+
+   **Option A: Use Convenience Script (Recommended)**
+   ```bash
+   ./scripts/local/up.sh
+   ```
+
+   **Option B: Manual Docker Command**
    ```bash
    docker compose up --build
    ```
@@ -26,14 +33,21 @@
    - Backend API: http://localhost:8080/api/images
    - API Docs: http://localhost:8000/swagger-ui.html
 
-4. **Create your account**:
+4. **Monitor in another terminal**:
+   ```bash
+   ./scripts/local/logs.sh
+   ```
+
+5. **Create your account**:
    - Click "Register" on the login page
    - Enter email and password
    - You now have a personal gallery (multi-user, isolated per account)
 
-5. **Verify existing data loads**:
+6. **Verify existing data loads**:
    - The gallery should show 8 pre-existing seed images after first login
    - SQLite DB at `ImageAPI/data/gallery.db` is bind-mounted and persists across restarts
+
+**See [scripts/README.md](./scripts/README.md) for all available commands (up, down, reset, debug, logs, shell access, etc.)**
 
 ## Video & Image Processing
 
@@ -84,17 +98,25 @@ docker compose -f compose.yaml up --build
 ## Database Browser (sqlite-web)
 
 Debug the SQLite database via a visual web UI:
+
+**Option A: Use Script (Recommended)**
+```bash
+./scripts/local/debug.sh
+```
+Opens http://localhost:8085 for visual SQLite browser.
+
+**Option B: Manual Docker Command**
 ```bash
 docker compose --profile debug up -d sqlite-web
+# Then open http://localhost:8085
 ```
-Then open http://localhost:8085 in your browser.
 
 **Notes:**
 - Opt-in only (requires `--profile debug` flag) — the raw database browser is not started by default.
 - Only useful when the backend runs the `local` Spring profile (SQLite). Under `feature` (PostgreSQL), this container has nothing to show.
 - Runs in read-only mode (`-r` flag) to prevent write contention with the backend's single-writer SQLite connection. If you need to edit/delete rows directly via the UI, you can override the `command:` in `compose.yaml` locally, accepting the risk of lock contention during heavy backend writes.
 
-To tear down the database browser:
+To tear down:
 ```bash
 docker compose --profile debug down sqlite-web
 ```
@@ -117,10 +139,19 @@ Example:
 
 ### Backend (Java)
 After editing `.java` files:
+
+**Option A: Use Script**
+```bash
+./scripts/local/rebuild.sh
+./scripts/local/up.sh
+```
+
+**Option B: Manual Commands**
 ```bash
 docker compose build backend
 docker compose up -d backend
 ```
+
 Then re-attach the debugger (F5).
 
 ### Frontend (Next.js)
@@ -148,7 +179,17 @@ Edit `.tsx`/`.ts` files and save — the `next dev` server hot-reloads automatic
 
 ### Containers won't start
 - Check Docker Desktop is running and WSL 2 integration is active.
-- View logs: `docker compose logs -f backend` or `docker compose logs -f frontend`.
+- View logs:
+  ```bash
+  ./scripts/local/logs.sh backend    # or frontend
+  # Manual: docker compose logs -f backend
+  ```
+
+### Check container status
+```bash
+./scripts/local/status.sh
+# Manual: docker compose ps
+```
 
 ### Backend can't reach database
 - Confirm `ImageAPI/data/gallery.db` exists on the host.
@@ -164,9 +205,19 @@ Edit `.tsx`/`.ts` files and save — the `next dev` server hot-reloads automatic
 - Uploaded images should appear on the host immediately.
 
 ### Debugger won't attach
-- Check the port is exposed: `docker compose ps` should show `5005->5005/tcp` and `9229->9229/tcp`.
+- Check the port is exposed:
+  ```bash
+  ./scripts/local/status.sh
+  # Manual: docker compose ps (should show 5005->5005/tcp and 9229->9229/tcp)
+  ```
 - If using `compose -f compose.yaml up`, ports aren't exposed — run full `docker compose up` instead.
 - Confirm VS Code's Java/Node extensions are installed.
+
+### Need shell access to a container
+```bash
+./scripts/local/shell-backend.sh     # bash in backend
+./scripts/local/shell-frontend.sh    # sh in frontend
+```
 
 ## Production Notes
 
