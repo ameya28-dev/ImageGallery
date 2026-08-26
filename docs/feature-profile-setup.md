@@ -367,6 +367,12 @@ git check-ignore .env.feature
 
 ### Step 5A — Build & Start
 
+**Recommended (convenience script):**
+```bash
+./scripts/feature/up.sh
+```
+
+**Manual (equivalent to above):**
 ```bash
 docker compose -f compose.yaml -f compose.feature.override.yaml up --build
 ```

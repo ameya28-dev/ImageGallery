@@ -1,26 +1,42 @@
 # ImageGallery — Project Structure & Setup Guide
 
+**For quick start and feature overview, see [README.md](../README.md). This document is a deep technical reference for developers.**
+
+---
+
 ## 📁 Project Architecture
 
 ```
 ImageGallery/
 ├── .env                          # Local secrets (gitignored)
 ├── .env.example                  # Template for .env (git-tracked)
+├── .env.feature                  # Feature profile secrets (gitignored)
+├── .env.feature.example          # Feature profile template (git-tracked)
 ├── .gitignore                    # Git exclusion rules
 ├── .vscode/
 │   └── launch.json              # Debugging configs (backend JDWP + frontend Node)
 ├── .claude/                      # Claude Code settings
-├── compose.yaml                 # Docker Compose orchestration
+├── compose.yaml                 # Docker Compose (local profile)
 ├── compose.override.yaml        # Development overrides (debugging ports)
+├── compose.feature.override.yaml # Feature profile overlay (RDS + S3)
 ├── nginx.conf                   # Reverse proxy config (frontend → nginx → backend)
-├── DOCKER.md                    # Docker setup notes
-├── README.md                    # User-facing project overview
-├── PROJECT_STRUCTURE.md         # This file
+├── DOCKER.md                    # Docker setup & debugging guide
+├── README.md                    # User-facing quick start & overview
+├── PROJECT_STRUCTURE.md         # This file (developer reference)
+│
+├── scripts/                     # Convenience shell scripts (no manual docker commands needed)
+│   ├── README.md               # Scripts reference guide
+│   ├── local/                  # Local profile scripts (SQLite, guest mode)
+│   │   ├── up.sh, down.sh, reset.sh, debug.sh, logs.sh, status.sh
+│   │   ├── rebuild.sh, clean.sh, shell-backend.sh, shell-frontend.sh
+│   └── feature/                # Feature profile scripts (RDS + S3, login required)
+│       ├── up.sh, down.sh, reset.sh, logs.sh, status.sh, rebuild.sh
+│       └── clean.sh, shell-backend.sh, shell-frontend.sh
 │
 ├── docs/                        # Documentation
-│   ├── docker-setup.md         # Docker Compose setup guide
-│   ├── aws-setup.md            # AWS deployment guide
-│   └── search-setup.md         # Visual search (Claude Vision) setup
+│   ├── PROJECT_STRUCTURE.md     # This file
+│   ├── feature-profile-setup.md # AWS + Feature profile complete setup guide
+│   └── search-setup.md          # Claude Vision API (visual/NL search) setup
 │
 ├── ImageAPI/                    # Spring Boot 3.5 backend (Java 21)
 │   ├── src/
@@ -269,13 +285,15 @@ ANTHROPIC_API_KEY=sk-ant-...  # Optional, for AI descriptions
 **Frontend `ImageWebPage/.env.local`**:
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8000    # nginx reverse proxy
-NEXT_PUBLIC_GOOGLE_AUTH=false                # Feature flag (future)
+NEXT_PUBLIC_GOOGLE_AUTH=false                # Feature flag (true in feature profile + compose.feature.override.yaml)
+NEXT_PUBLIC_GUEST_MODE=true                  # Guest access (false in feature profile)
+NEXT_PUBLIC_SEED_IMPORT_ENABLED=true         # Seed import prompt (false in feature profile)
 ```
 
 **Backend** (`src/main/resources/application.yml`):
-- Profiles: `local` (default), `featurecomplete`, `aws`
-- Database: SQLite on `local` profile
-- Paths: Images in `/app/data/images`, thumbnails in `/app/data/thumbnails`
+- Profiles: `local` (default), `feature` (staging), `prod` (production, future)
+- Database: SQLite on `local` profile; PostgreSQL (RDS) on `feature` profile
+- Paths: Images in `/app/data/images`, thumbnails in `/app/data/thumbnails` (local); S3 paths for feature/prod
 
 ## 🔄 Startup Sequence
 
@@ -312,12 +330,17 @@ NEXT_PUBLIC_GOOGLE_AUTH=false                # Feature flag (future)
 - [x] **Video support** — MP4, MOV, WebM, AVI, MKV with auto-thumbnails
 - [x] **WebP support** — Full-resolution WebP images with JPEG thumbnails
 - [x] **Enhanced Lightbox UI** — Double-click fullscreen, arrow key navigation always enabled
+- [x] **Google OAuth** — "Sign in with Google" in feature profile
+- [x] **AWS S3 storage** — Feature profile with PostgreSQL RDS + S3 (versioning for soft-delete)
+- [x] **Profile-gated guest mode** — Local profile has guest browsing; feature requires login
+- [x] **Landing page** — Marketing/dashboard page for logged-out feature profile users
+- [x] **Convenience scripts** — Docker Compose shortcuts (./scripts/local/up.sh, etc.)
 
 ## 🚧 Future Enhancements
 
-- [ ] OAuth (Google, GitHub sign-in)
-- [ ] AWS S3 storage (feature profile)
+- [ ] GitHub OAuth (in addition to Google)
 - [ ] Elasticsearch for full-text search
-- [ ] Image classification (tags via Claude Vision)
+- [ ] Advanced image classification (tags via Claude Vision)
 - [ ] Collections/albums feature
 - [ ] Sharing & collaboration (view/edit permissions)
+- [ ] Production deployment (`prod` profile) on AWS/cloud

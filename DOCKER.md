@@ -1,4 +1,8 @@
-# Docker Setup for ImageGallery (Local Profile + VS Code Debugging)
+# Docker Setup — Local Profile
+
+**For quick start guide, see [README.md](./README.md#-quick-start). This document covers Docker configuration, debugging, and troubleshooting.**
+
+---
 
 ## System Requirements
 
@@ -7,47 +11,24 @@
 - **FFmpeg**: Automatically installed in backend container for video processing
 - **Anthropic API Key** (optional): For AI image descriptions
 
-## Quick Start
+## Quick Reference
 
-1. **Copy the env template** (optional for now):
-   ```bash
-   cp .env.example .env
-   # Leave ANTHROPIC_API_KEY empty unless you want AI image description + NL search
-   ```
+```bash
+# Start with scripts (recommended)
+./scripts/local/up.sh       # Start app
+./scripts/local/logs.sh     # Watch logs
+./scripts/local/down.sh     # Stop app
 
-2. **Start Docker containers** (choose one):
+# Or manual Docker Compose
+docker compose up --build
+docker compose down
 
-   **Option A: Use Convenience Script (Recommended)**
-   ```bash
-   ./scripts/local/up.sh
-   ```
+# Full reference: see scripts/README.md
+```
 
-   **Option B: Manual Docker Command**
-   ```bash
-   docker compose up --build
-   ```
-   This auto-merges `compose.yaml` + `compose.override.yaml`, so debug ports (5005, 9229) are exposed by default.
-
-3. **Access the app**:
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:8080/api/images
-   - API Docs: http://localhost:8000/swagger-ui.html
-
-4. **Monitor in another terminal**:
-   ```bash
-   ./scripts/local/logs.sh
-   ```
-
-5. **Create your account**:
-   - Click "Register" on the login page
-   - Enter email and password
-   - You now have a personal gallery (multi-user, isolated per account)
-
-6. **Verify existing data loads**:
-   - The gallery should show 8 pre-existing seed images after first login
-   - SQLite DB at `ImageAPI/data/gallery.db` is bind-mounted and persists across restarts
-
-**See [scripts/README.md](./scripts/README.md) for all available commands (up, down, reset, debug, logs, shell access, etc.)**
+**Ports**: Frontend on `:3000`, API on `:8000` (nginx reverse proxy)  
+**Database**: SQLite at `ImageAPI/data/gallery.db`  
+**Debug Ports**: `:5005` (Java JDWP), `:9229` (Node inspector) — exposed by default via `compose.override.yaml`
 
 ## Video & Image Processing
 

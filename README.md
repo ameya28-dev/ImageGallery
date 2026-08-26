@@ -45,7 +45,7 @@ cp .env.example .env
 
 ### 2. Start the Application
 
-**Option A: Use Convenience Scripts (Recommended)**
+**Recommended: Use Convenience Scripts**
 
 ```bash
 # Start the app (builds images on first run)
@@ -61,26 +61,9 @@ cp .env.example .env
 ./scripts/local/reset.sh
 ```
 
-**Option B: Manual Docker Commands**
+**All available scripts**: see [**scripts/README.md**](./scripts/README.md) (debugging, shell access, status monitoring, cleanup, etc.)
 
-```bash
-# First time (will build images and seed demo data)
-docker compose up --build
-
-# Subsequent times (faster, reuses images)
-docker compose up
-
-# Run in background
-docker compose up -d
-
-# Stop services
-docker compose down
-
-# Clean everything (removes volumes + cached images)
-docker compose down -v
-```
-
-See [**scripts/README.md**](./scripts/README.md) for all available convenience scripts (debugging, shell access, status monitoring, etc.).
+**Manual Docker (if preferred)**: see [DOCKER.md](./DOCKER.md#quick-start) for manual `docker compose` commands and detailed Docker setup guide.
 
 ### 3. Open in Browser
 
@@ -192,44 +175,47 @@ NEXT_PUBLIC_GOOGLE_AUTH=false               # Feature flag
 
 ## 🐛 Debugging
 
-### Interactive Shell Access
+### Quick Debugging Checklist
 
+#### Shell Access
 ```bash
 # Enter backend container shell
 ./scripts/local/shell-backend.sh
 
 # Enter frontend container shell
 ./scripts/local/shell-frontend.sh
-
-# Check logs in real-time
-./scripts/local/logs.sh backend    # backend only
-./scripts/local/logs.sh frontend   # frontend only
-./scripts/local/logs.sh            # all services
 ```
 
-### Debugger Attachment (VS Code)
+#### View Logs
+```bash
+# Check logs in real-time
+./scripts/local/logs.sh            # all services
+./scripts/local/logs.sh backend    # backend only
+./scripts/local/logs.sh frontend   # frontend only
+```
 
-Open VS Code and select **Run** → **Start Debugging** (Ctrl+F5), then choose:
-- **"Attach: Backend (JDWP 5005)"** — Debug Java/Spring Boot; set breakpoints in `ImageAPI/src/main/java/`
-- **"Attach: Frontend (Node 9229)"** — Debug Node.js; set breakpoints in `ImageWebPage/src/`
+#### Debugger (VS Code)
+Open VS Code and press **Ctrl+F5**, then choose:
+- **"Attach: Backend (JDWP 5005)"** — Debug Java/Spring Boot (set breakpoints in `ImageAPI/src/main/java/`)
+- **"Attach: Frontend (Node 9229)"** — Debug Node.js (set breakpoints in `ImageWebPage/src/`)
 - **"Attach: Backend + Frontend"** — Debug both simultaneously
 
-### Debug with SQLite UI
-
+#### SQLite Database Inspector
 ```bash
 # Start with SQLite Web UI (runs on http://localhost:8085)
 ./scripts/local/debug.sh
 ```
 
-Inspect the SQLite database visually while the app runs.
+**For detailed debugging guide, see [docs/PROJECT_STRUCTURE.md](./docs/PROJECT_STRUCTURE.md#-debugging).**
 
 ## 📚 Documentation
 
-- **[docs/PROJECT_STRUCTURE.md](./docs/PROJECT_STRUCTURE.md)** — Detailed folder layout, startup sequence, debugging guide
-- **[docs/docker-setup.md](./docs/docker-setup.md)** — Docker Compose detailed setup
-- **[docs/search-setup.md](./docs/search-setup.md)** — Claude Vision API configuration
-- **[DOCKER.md](./DOCKER.md)** — Docker image build details
-- **[docs/REVIEW_NOTES.md](./docs/REVIEW_NOTES.md)** — Project review & decisions
+- **[README.md](./README.md)** — Quick start, features, usage, FAQ (you are here)
+- **[DOCKER.md](./DOCKER.md)** — Docker setup, debugging, configuration details
+- **[docs/PROJECT_STRUCTURE.md](./docs/PROJECT_STRUCTURE.md)** — Project architecture, folder layout, startup sequence (detailed reference for developers)
+- **[docs/feature-profile-setup.md](./docs/feature-profile-setup.md)** — Complete setup guide for feature profile (AWS RDS + S3 + Google OAuth)
+- **[docs/search-setup.md](./docs/search-setup.md)** — Claude Vision API (visual/NL search) configuration
+- **[scripts/README.md](./scripts/README.md)** — Convenience script reference (instead of manual docker compose commands)
 
 ## 🔌 API Endpoints
 
@@ -302,14 +288,23 @@ docker run --rm -v imagegallery_gallery-data:/data alpine:latest ls -la /data/im
 curl http://localhost:8000/api/images | head -c 200
 ```
 
-## 📦 Building for Production
+## 📦 Profiles & Deployment
 
-See **[docs/aws-setup.md](./docs/aws-setup.md)** for cloud deployment details.
+**Local Profile** (`local` — development):
+- SQLite database, local filesystem storage
+- Guest mode enabled, seed data auto-populated
+- Debugging enabled (Java/Node breakpoints)
+- Use: `./scripts/local/up.sh`
 
-Current profiles:
-- `local` — Development (SQLite, debugging enabled)
-- `featurecomplete` — Feature-rich variant (future)
-- `aws` — Cloud deployment (future)
+**Feature Profile** (`feature` — staging):
+- PostgreSQL on AWS RDS, images in Amazon S3
+- Login required (no guest mode), Google OAuth
+- Production-like behavior (staging environment)
+- Complete setup: **[docs/feature-profile-setup.md](./docs/feature-profile-setup.md)**
+- Use: `./scripts/feature/up.sh`
+
+**Production Profile** (`prod` — future):
+- Will extend feature profile to AWS cloud compute (ECS/EC2)
 
 ## 🤝 Contributing
 
