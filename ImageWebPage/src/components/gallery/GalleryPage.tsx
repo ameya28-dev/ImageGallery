@@ -89,10 +89,11 @@ export default function GalleryPage() {
     const [dragOver, setDragOver] = useState(false);
     const dragCounter = useRef(0);
 
-    // Show seed import prompt on first login with empty gallery
+    // Show seed import prompt on first login with empty gallery (local profile only)
     // Use a per-user session key so the prompt shows for each new account
     useEffect(() => {
-        if (!isOwner || !user?.email) return;
+        const seedImportEnabled = process.env.NEXT_PUBLIC_SEED_IMPORT_ENABLED === "true";
+        if (!seedImportEnabled || !isOwner || !user?.email) return;
         const sessionKey = `seedImportAsked_${user.email}`;
         const asked = sessionStorage.getItem(sessionKey);
         const shouldShow = groups.length === 0 && !loading && !asked;

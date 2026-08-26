@@ -1,5 +1,5 @@
-import GalleryPage from "@/components/gallery/GalleryPage";
+import HomeGate from "@/components/gallery/HomeGate";
 
 export default function Home() {
-  return <GalleryPage />;
+  return <HomeGate />;
 }

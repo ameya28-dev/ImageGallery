@@ -63,8 +63,10 @@ ImageWebPage/*.tsbuildinfo
 
 # ── Secrets & environment ─────────────────────────────────────────────
 # .env.example / .env.local.example are safe to commit (no real secrets).
+# .env.feature and .env.local contain real credentials — never commit
 .env
 .env.local
+.env.feature
 .env*.local
 !.env.example
 !.env.local.example

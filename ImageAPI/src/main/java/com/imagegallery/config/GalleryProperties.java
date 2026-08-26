@@ -15,7 +15,10 @@ public class GalleryProperties {
     private S3 s3 = new S3();
     private String imagesPath;
     private String thumbnailsPath;
+    private String frontendUrl = "http://localhost:3000";  // OAuth2 redirect & CORS origin
     private Thumbnail thumbnail = new Thumbnail();
+    private boolean guestAccessEnabled = true;
+    private boolean seedImportEnabled = true;
 
     @Getter
     @Setter

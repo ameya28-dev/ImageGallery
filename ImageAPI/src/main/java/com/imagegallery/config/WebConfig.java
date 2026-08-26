@@ -10,22 +10,26 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebConfig implements WebMvcConfigurer {
 
     private final GuestUploadInterceptor guestUploadInterceptor;
+    private final GalleryProperties galleryProperties;
 
-    public WebConfig(GuestUploadInterceptor guestUploadInterceptor) {
+    public WebConfig(GuestUploadInterceptor guestUploadInterceptor, GalleryProperties galleryProperties) {
         this.guestUploadInterceptor = guestUploadInterceptor;
+        this.galleryProperties = galleryProperties;
     }
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
+        String frontendUrl = galleryProperties.getFrontendUrl();
+
         registry.addMapping("/api/**")
-                .allowedOrigins("http://localhost:3000")
+                .allowedOrigins(frontendUrl)
                 .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true);   // required for httpOnly cookie to flow cross-origin
 
         // Allow Spring Security's OAuth2 redirect endpoints
         registry.addMapping("/oauth2/**")
-                .allowedOrigins("http://localhost:3000")
+                .allowedOrigins(frontendUrl)
                 .allowedMethods("GET")
                 .allowCredentials(true);
     }

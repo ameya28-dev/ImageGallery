@@ -50,6 +50,9 @@ services:
       NEXT_PUBLIC_API_URL: http://localhost:8000
       # From SSR: call nginx via backend-tier network (if SSR calls backend)
       BACKEND_URL: http://nginx:8000
+      # Local profile: guest mode enabled, seed import available
+      NEXT_PUBLIC_GUEST_MODE: "true"
+      NEXT_PUBLIC_SEED_IMPORT_ENABLED: "true"
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
     volumes:
       - ./ImageWebPage:/app

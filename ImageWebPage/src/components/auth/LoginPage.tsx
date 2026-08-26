@@ -18,6 +18,7 @@ export default function LoginPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   const googleAuthEnabled = process.env.NEXT_PUBLIC_GOOGLE_AUTH === "true";
+  const guestModeEnabled = process.env.NEXT_PUBLIC_GUEST_MODE === "true";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -136,9 +137,11 @@ export default function LoginPage() {
         )}
 
         {/* Guest hint and register link */}
-        <p className="text-center text-gray-600 text-xs mt-8">
-          Browsing as guest · 5 uploads/day
-        </p>
+        {guestModeEnabled && (
+          <p className="text-center text-gray-600 text-xs mt-8">
+            Browsing as guest · 5 uploads/day
+          </p>
+        )}
         <p className="text-center text-gray-400 text-sm mt-4">
           New here?{" "}
           <Link href="/register" className="text-blue-400 hover:underline">

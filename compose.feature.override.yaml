@@ -1,0 +1,33 @@
+services:
+  backend:
+    environment:
+      SPRING_PROFILES_ACTIVE: feature,google-auth
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_NAME: ${DB_NAME}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      AWS_REGION: ${AWS_REGION}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GALLERY_FRONTEND_URL: ${GALLERY_FRONTEND_URL}
+      GALLERY_ADMIN_EMAIL: ${GALLERY_ADMIN_EMAIL}
+      GALLERY_ADMIN_PASSWORD: ${GALLERY_ADMIN_PASSWORD}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    env_file:
+      - .env.feature
+
+  frontend:
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      BACKEND_URL: http://nginx:8000
+      NEXT_PUBLIC_GOOGLE_AUTH: "true"
+      # Feature profile: guest mode disabled, landing page required, no seed import
+      NEXT_PUBLIC_GUEST_MODE: "false"
+      NEXT_PUBLIC_SEED_IMPORT_ENABLED: "false"
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    env_file:
+      - .env.feature
