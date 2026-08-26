@@ -5,8 +5,9 @@ import {ImageDto, ImageGroupDto} from "@/types";
 import {useImages} from "@/hooks/useImages";
 import {useFavourite} from "@/hooks/useFavourite";
 import {useTags} from "@/hooks/useTags";
-import {deleteImage, deleteImages, uploadImage} from "@/lib/api";
+import {deleteImage, deleteImages, uploadImage, importSeedImages} from "@/lib/api";
 import {useAuth} from "@/context/AuthContext";
+import {useToast} from "@/components/ui/Toast";
 import GalleryHeader from "./GalleryHeader";
 import DateGroup from "./DateGroup";
 import SelectionBar from "./SelectionBar";
@@ -14,6 +15,8 @@ import UploadProgressDialog from "./UploadProgressDialog";
 import Lightbox from "@/components/lightbox/Lightbox";
 import TagDialog from "@/components/tags/TagDialog";
 import DeleteDialog from "@/components/lightbox/DeleteDialog";
+import LoginPromptDialog from "@/components/ui/LoginPromptDialog";
+import SeedImportDialog from "@/components/ui/SeedImportDialog";
 
 function SelectionHeader({count, total, onCancel, onSelectAll}: {
     count: number;
@@ -52,8 +55,14 @@ function bulkTagTarget(selectedCount: number): ImageDto {
 }
 
 export default function GalleryPage() {
-    const {isOwner} = useAuth();
+    const {isOwner, user} = useAuth();
     const {groups, setGroups, loading, error, reload} = useImages();
+    const {showToast} = useToast();
+
+    // Refetch images when auth state changes (login/logout)
+    useEffect(() => {
+        reload();
+    }, [isOwner, reload]);
     const {toggle: toggleFavouriteRaw} = useFavourite(setGroups);
     const {add: addTag, remove: removeTag, suggestions, loadSuggestions} = useTags(setGroups);
 
@@ -69,6 +78,9 @@ export default function GalleryPage() {
     const [lightboxImage, setLightboxImage] = useState<ImageDto | null>(null);
     const [bulkTagOpen, setBulkTagOpen] = useState(false);
     const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
+    const [showBulkDeleteLoginPrompt, setShowBulkDeleteLoginPrompt] = useState(false);
+    const [seedImportOpen, setSeedImportOpen] = useState(false);
+    const [seedImportLoading, setSeedImportLoading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState<{
         current: number;
         total: number;
@@ -76,6 +88,19 @@ export default function GalleryPage() {
     } | null>(null);
     const [dragOver, setDragOver] = useState(false);
     const dragCounter = useRef(0);
+
+    // Show seed import prompt on first login with empty gallery
+    // Use a per-user session key so the prompt shows for each new account
+    useEffect(() => {
+        if (!isOwner || !user?.email) return;
+        const sessionKey = `seedImportAsked_${user.email}`;
+        const asked = sessionStorage.getItem(sessionKey);
+        const shouldShow = groups.length === 0 && !loading && !asked;
+        if (shouldShow) {
+            setSeedImportOpen(true);
+            sessionStorage.setItem(sessionKey, "true");
+        }
+    }, [isOwner, user?.email, groups.length, loading]);
 
     const filteredGroups = useMemo(
         () =>
@@ -190,7 +215,15 @@ export default function GalleryPage() {
                 for (let i = 0; i < files.length; i++) {
                     try {
                         await uploadImage(files[i]);
-                    } catch {
+                    } catch (err) {
+                        // Only count as "already in gallery" if it's an actual duplicate error
+                        // Other errors (network, validation) are logged but still counted as failures
+                        const errorMsg = err instanceof Error ? err.message : String(err);
+                        if (errorMsg.includes("already exists")) {
+                            console.warn(`Duplicate detected: ${files[i].name} - ${errorMsg}`);
+                        } else {
+                            console.error(`Upload failed for ${files[i].name}:`, err);
+                        }
                         skipped++;
                     }
                     setUploadProgress({current: i + 1, total: files.length, skipped});
@@ -202,6 +235,26 @@ export default function GalleryPage() {
         },
         [reload],
     );
+
+    const handleSeedImportAccept = useCallback(async () => {
+        setSeedImportLoading(true);
+        try {
+            await importSeedImages();
+            await reload();
+            setSeedImportOpen(false);
+            showToast("Sample images imported!");
+        } catch (e) {
+            const msg = e instanceof Error ? e.message : "Import failed";
+            showToast(msg);
+            console.error("Seed import failed:", e);
+        } finally {
+            setSeedImportLoading(false);
+        }
+    }, [reload, showToast]);
+
+    const handleSeedImportDecline = useCallback(() => {
+        setSeedImportOpen(false);
+    }, []);
 
     useEffect(() => {
         const onDragEnter = (e: DragEvent) => {
@@ -307,7 +360,13 @@ export default function GalleryPage() {
                     count={selectedIds.size}
                     onFavourite={handleBulkFavourite}
                     onAddTag={() => setBulkTagOpen(true)}
-                    onDelete={() => setShowBulkDeleteDialog(true)}
+                    onDelete={() => {
+                        if (!isOwner) {
+                            setShowBulkDeleteLoginPrompt(true);
+                        } else {
+                            setShowBulkDeleteDialog(true);
+                        }
+                    }}
                 />
             )}
 
@@ -333,6 +392,13 @@ export default function GalleryPage() {
                 onConfirm={handleBulkDelete}
                 onClose={() => setShowBulkDeleteDialog(false)}
             />
+
+            <LoginPromptDialog
+                open={showBulkDeleteLoginPrompt}
+                action="delete these images"
+                onClose={() => setShowBulkDeleteLoginPrompt(false)}
+            />
+
             {uploadProgress !== null && (
                 <UploadProgressDialog
                     current={uploadProgress.current}
@@ -350,6 +416,13 @@ export default function GalleryPage() {
                     </div>
                 </div>
             )}
+
+            <SeedImportDialog
+                open={seedImportOpen}
+                onDecline={handleSeedImportDecline}
+                onAccept={handleSeedImportAccept}
+                loading={seedImportLoading}
+            />
 
             <Lightbox
                 image={lightboxImage}

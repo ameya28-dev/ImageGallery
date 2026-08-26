@@ -11,6 +11,8 @@ RUN mvn -B -q -DskipTests package
 # ---- Runtime stage ----
 FROM eclipse-temurin:21-jre-jammy
 WORKDIR /app
+# Install FFmpeg for video frame extraction and metadata reading
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -rf /var/lib/apt/lists/*
 COPY --from=build /build/target/image-gallery-0.0.1-SNAPSHOT.jar app.jar
 # Bake in seed data (default demo images and metadata for local profile first-run)
 COPY seed-data ./seed-data

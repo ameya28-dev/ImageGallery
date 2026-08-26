@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { setApiToken } from "@/lib/api";
+import { setApiToken, ApiError } from "@/lib/api";
 
 interface User {
   email: string;
@@ -78,7 +78,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.error ?? "Invalid credentials");
+      // Throw ApiError with proper errorType and message for frontend handling
+      throw new ApiError(
+        res.status,
+        err.message ?? err.error ?? "Sign-in failed",
+        err.errorType,
+        err
+      );
     }
     const data: { accessToken: string; email: string } = await res.json();
     setAccessToken(data.accessToken);

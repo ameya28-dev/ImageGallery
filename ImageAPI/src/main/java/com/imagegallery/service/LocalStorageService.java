@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.time.Instant;
 
 @Service
 @Profile("local")
@@ -63,12 +64,56 @@ public class LocalStorageService implements StorageService {
     }
 
     @Override
+    public Instant getImageLastModified(String storageKey) {
+        try {
+            return Files.getLastModifiedTime(imagePath(storageKey))
+                    .toInstant();
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to get image last modified time: " + storageKey, e);
+        }
+    }
+
+    @Override
+    public Instant getThumbnailLastModified(String storageKey) {
+        try {
+            return Files.getLastModifiedTime(thumbnailPath(storageKey))
+                    .toInstant();
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to get thumbnail last modified time: " + storageKey, e);
+        }
+    }
+
+    @Override
     public void deleteImage(String storageKey, String thumbnailKey) {
         try {
             Files.deleteIfExists(imagePath(storageKey));
             Files.deleteIfExists(thumbnailPath(thumbnailKey));
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to delete image: " + storageKey, e);
+        }
+    }
+
+    @Override
+    public void copyImage(String sourceKey, String destKey) {
+        try {
+            Path src = imagePath(sourceKey);
+            Path dst = imagePath(destKey);
+            Files.createDirectories(dst.getParent());
+            Files.copy(src, dst, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to copy image: " + sourceKey + " -> " + destKey, e);
+        }
+    }
+
+    @Override
+    public void copyThumbnail(String sourceKey, String destKey) {
+        try {
+            Path src = thumbnailPath(sourceKey);
+            Path dst = thumbnailPath(destKey);
+            Files.createDirectories(dst.getParent());
+            Files.copy(src, dst, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to copy thumbnail: " + sourceKey + " -> " + destKey, e);
         }
     }
 

@@ -4,10 +4,12 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { ArrowLeft, Heart, Info, Trash2, Maximize2, Minimize2 } from "lucide-react";
 import { ImageDto } from "@/types";
-import { fullSrc, thumbnailSrc } from "@/lib/api";
+import { fetchFullImageBlob, thumbnailSrc, isVideoFile } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 import ThumbnailCarousel from "./ThumbnailCarousel";
 import InfoPanel from "./InfoPanel";
 import DeleteDialog from "./DeleteDialog";
+import LoginPromptDialog from "@/components/ui/LoginPromptDialog";
 import TagDialog from "@/components/tags/TagDialog";
 
 interface LightboxProps {
@@ -33,11 +35,13 @@ export default function Lightbox({
   tagSuggestions,
   onLoadTagSuggestions,
 }: LightboxProps) {
+  const { isOwner } = useAuth();
   const [activeId, setActiveId] = useState<number | null>(null);
-  const [loadedIds, setLoadedIds] = useState<Set<number>>(new Set());
+  const [loadedBlobUrls, setLoadedBlobUrls] = useState<Map<number, string>>(new Map());
   const [showInfo, setShowInfo] = useState(false);
   const [showTagDialog, setShowTagDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   // Used as portal target for TagDialog on desktop so it stays within the panel width
   const infoPanelRef = useRef<HTMLDivElement>(null);
@@ -69,14 +73,16 @@ export default function Lightbox({
     toggleFullscreen();
   }, [toggleFullscreen]);
 
-  const handleImageClick = useCallback(() => {
-    const now = Date.now();
-    if (now - lastTapTimeRef.current < 300) {
-      // Double tap detected
-      toggleFullscreen();
-    }
-    lastTapTimeRef.current = now;
-  }, [toggleFullscreen]);
+  // Navigate function for arrow keys
+  const navigate = useCallback(
+    (delta: number) => {
+      if (!activeId || allImages.length === 0) return;
+      const idx = allImages.findIndex((img) => img.id === activeId);
+      const nextIdx = (idx + delta + allImages.length) % allImages.length;
+      setActiveId(allImages[nextIdx].id);
+    },
+    [activeId, allImages],
+  );
 
   useEffect(() => {
     if (image) {
@@ -84,12 +90,37 @@ export default function Lightbox({
       setShowInfo(false);
       setShowTagDialog(false);
       setShowDeleteDialog(false);
+      setShowLoginPrompt(false);
       if (isFullscreen && document.fullscreenElement) {
         document.exitFullscreen();
         setIsFullscreen(false);
       }
+      // Fetch the full image blob for the active image if not already loaded
+      if (!loadedBlobUrls.has(image.id)) {
+        fetchFullImageBlob(image.id)
+          .then((blobUrl) => {
+            setLoadedBlobUrls((prev) => {
+              if (prev.has(image.id)) {
+                URL.revokeObjectURL(blobUrl);
+                return prev;
+              }
+              const next = new Map(prev);
+              next.set(image.id, blobUrl);
+              return next;
+            });
+          })
+          .catch((err) => console.error(`Failed to load image ${image.id}:`, err));
+      }
     }
   }, [image?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleDeleteClick = useCallback(() => {
+    if (!isOwner) {
+      setShowLoginPrompt(true);
+    } else {
+      setShowDeleteDialog(true);
+    }
+  }, [isOwner]);
 
   // Listen for fullscreen changes (e.g., ESC key pressed)
   useEffect(() => {
@@ -100,18 +131,19 @@ export default function Lightbox({
     return () => document.removeEventListener("fullscreenchange", handler);
   }, []);
 
+  // Validate that activeId still exists in allImages. If the array changes order/content,
+  // reset to the image prop to prevent carousel-image mismatch
   const activeImage = allImages.find((img) => img.id === activeId) ?? null;
   const isOpen = image !== null && activeImage !== null;
 
-  const navigate = useCallback(
-    (delta: number) => {
-      if (!activeId || allImages.length === 0) return;
-      const idx = allImages.findIndex((img) => img.id === activeId);
-      const nextIdx = (idx + delta + allImages.length) % allImages.length;
-      setActiveId(allImages[nextIdx].id);
-    },
-    [activeId, allImages],
-  );
+  // Watch for changes to allImages and ensure activeId is still valid
+  useEffect(() => {
+    if (!isOpen || !activeId) return;
+    // If activeId no longer exists in the new allImages array, sync back to the image prop
+    if (!allImages.some((img) => img.id === activeId) && image) {
+      setActiveId(image.id);
+    }
+  }, [allImages, isOpen, activeId, image]);
 
   const handleDeleteConfirm = useCallback(async () => {
     if (!activeImage) return;
@@ -126,6 +158,15 @@ export default function Lightbox({
     if (neighborId === null) onClose();
   }, [activeImage, allImages, onDelete, onClose]);
 
+  // Cleanup blob URLs on unmount or when lightbox closes
+  useEffect(() => {
+    if (!isOpen) {
+      // Revoke all blob URLs when lightbox closes
+      loadedBlobUrls.forEach((blobUrl) => URL.revokeObjectURL(blobUrl));
+      setLoadedBlobUrls(new Map());
+    }
+  }, [isOpen]);
+
   useEffect(() => {
     if (!isOpen) return;
     document.body.style.overflow = "hidden";
@@ -135,9 +176,9 @@ export default function Lightbox({
   useEffect(() => {
     if (!isOpen) return;
     const handler = (e: KeyboardEvent) => {
-      // Arrow keys work in fullscreen too
-      if (e.key === "ArrowLeft" && !showInfo) navigate(-1);
-      if (e.key === "ArrowRight" && !showInfo) navigate(1);
+      // Arrow keys always work, even when info panel is open
+      if (e.key === "ArrowLeft") navigate(-1);
+      if (e.key === "ArrowRight") navigate(1);
       if (e.key === "Escape") {
         if (showDeleteDialog || showTagDialog) return;
         // Exit fullscreen first if active
@@ -152,20 +193,39 @@ export default function Lightbox({
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [isOpen, navigate, showInfo, showTagDialog, showDeleteDialog, isFullscreen, onClose]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isOpen, navigate, showTagDialog, showDeleteDialog, isFullscreen, onClose]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Preload the prev/next full images so navigation feels instant
   useEffect(() => {
     if (!activeId || allImages.length < 2) return;
     const idx = allImages.findIndex((img) => img.id === activeId);
-    [
+    const toPreload = [
       allImages[(idx + 1) % allImages.length],
       allImages[(idx - 1 + allImages.length) % allImages.length],
-    ].forEach((img) => {
-      const preload = new window.Image();
-      preload.src = fullSrc(img.id);
-      preload.onload = () =>
-        setLoadedIds((prev) => (prev.has(img.id) ? prev : new Set([...prev, img.id])));
+    ];
+
+    toPreload.forEach((img) => {
+      // Check current loaded state before fetching
+      setLoadedBlobUrls((currentLoaded) => {
+        if (currentLoaded.has(img.id)) {
+          // Already loaded, no need to fetch again
+          return currentLoaded;
+        }
+
+        // Not loaded yet, fetch it
+        fetchFullImageBlob(img.id)
+          .then((blobUrl) => {
+            setLoadedBlobUrls((prev) => {
+              const updated = new Map(prev);
+              updated.set(img.id, blobUrl);
+              return updated;
+            });
+          })
+          .catch((err) => console.error(`Failed to preload image ${img.id}:`, err));
+
+        // Return current state unchanged; fetch happens asynchronously
+        return currentLoaded;
+      });
     });
   }, [activeId, allImages]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -199,7 +259,7 @@ export default function Lightbox({
           <button onClick={toggleFullscreen} aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}>
             {isFullscreen ? <Minimize2 size={22} /> : <Maximize2 size={22} />}
           </button>
-          <button onClick={() => setShowDeleteDialog(true)} aria-label="Delete">
+          <button onClick={handleDeleteClick} aria-label="Delete">
             <Trash2 size={22} />
           </button>
         </div>
@@ -217,29 +277,12 @@ export default function Lightbox({
             showInfo ? "h-1/2 sm:h-auto sm:flex-1" : "flex-1"
           }`}
         >
-          {/* Image area — clicking collapses info panel, double-tap enters fullscreen */}
+          {/* Image area — double-click toggles fullscreen */}
           <div
             ref={imageAreaRef}
-            className={`flex-1 min-h-0 flex items-center justify-center overflow-hidden relative ${
-              showInfo ? "cursor-pointer" : ""
-            }`}
-            onClick={showInfo ? () => { setShowInfo(false); setShowTagDialog(false); } : handleImageClick}
+            className="flex-1 min-h-0 flex items-center justify-center overflow-hidden relative"
             onDoubleClick={handleImageDoubleClick}
           >
-            {/* Tap zones for prev/next — only when info is closed */}
-            {!showInfo && (
-              <>
-                <div
-                  className="absolute left-0 top-0 bottom-0 w-1/4 z-10 cursor-pointer"
-                  onClick={() => navigate(-1)}
-                />
-                <div
-                  className="absolute right-0 top-0 bottom-0 w-1/4 z-10 cursor-pointer"
-                  onClick={() => navigate(1)}
-                />
-              </>
-            )}
-
             {/* Blurred thumbnail shown while full image downloads */}
             <img
               key={`blur-${activeImage.id}`}
@@ -247,27 +290,32 @@ export default function Lightbox({
               alt=""
               aria-hidden="true"
               className={`absolute max-w-full max-h-full object-contain blur-xl scale-110 transition-opacity duration-300 pointer-events-none ${
-                loadedIds.has(activeImage.id) ? "opacity-0" : "opacity-70"
+                loadedBlobUrls.has(activeImage.id) ? "opacity-0" : "opacity-70"
               }`}
             />
 
-            {/* Full-resolution image — fades in once decoded */}
-            <img
-              key={activeImage.id}
-              src={fullSrc(activeImage.id)}
-              alt={activeImage.filename}
-              className={`max-w-full max-h-full object-contain transition-opacity duration-300 ${
-                loadedIds.has(activeImage.id) ? "opacity-100" : "opacity-0"
-              }`}
-              onLoad={() =>
-                setLoadedIds((prev) =>
-                  prev.has(activeImage.id) ? prev : new Set([...prev, activeImage.id])
-                )
-              }
-            />
+            {/* Full-resolution image or video — fades in once decoded */}
+            {loadedBlobUrls.has(activeImage.id) && (
+              isVideoFile(activeImage.filename) ? (
+                <video
+                  key={activeImage.id}
+                  src={loadedBlobUrls.get(activeImage.id)}
+                  controls
+                  autoPlay
+                  className="max-w-full max-h-full object-contain transition-opacity duration-300 opacity-100"
+                />
+              ) : (
+                <img
+                  key={activeImage.id}
+                  src={loadedBlobUrls.get(activeImage.id)}
+                  alt={activeImage.filename}
+                  className="max-w-full max-h-full object-contain transition-opacity duration-300 opacity-100"
+                />
+              )
+            )}
 
             {/* Spinner while full image is in-flight */}
-            {!loadedIds.has(activeImage.id) && (
+            {!loadedBlobUrls.has(activeImage.id) && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="w-9 h-9 rounded-full border-2 border-white/20 border-t-white animate-spin" />
               </div>
@@ -308,6 +356,12 @@ export default function Lightbox({
         suggestions={tagSuggestions}
         onLoadSuggestions={onLoadTagSuggestions}
         container={showInfo ? infoPanelRef.current : null}
+      />
+
+      <LoginPromptDialog
+        open={showLoginPrompt}
+        action="delete this image"
+        onClose={() => setShowLoginPrompt(false)}
       />
 
       <DeleteDialog

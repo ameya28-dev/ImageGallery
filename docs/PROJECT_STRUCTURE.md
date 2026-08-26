@@ -297,17 +297,27 @@ NEXT_PUBLIC_GOOGLE_AUTH=false                # Feature flag (future)
 
 ## 📝 Notes
 
-- **First run**: Slower (builds images, seeds data), ~30-60 seconds
+- **First run**: Slower (builds images, seeds data, installs FFmpeg), ~30-60 seconds
 - **Subsequent runs**: Fast, ~10 seconds (containers reuse images)
 - **Cache headers**: API metadata is never cached (always fresh), images cached 1 year
 - **SEO/Meta**: Only for `/` route (GalleryPage), search results are client-side
-- **Auth**: Not implemented yet (framework in place in `AuthContext`)
+- **Auth**: JWT-based multi-user authentication implemented (register/login required)
+- **Video support**: FFmpeg included for frame extraction and duration parsing
+- **WebP support**: Full-resolution WebP images with JPEG thumbnail fallback
+
+## ✅ Recently Implemented
+
+- [x] **User authentication** — JWT-based login/register, multi-user support
+- [x] **Multiple user galleries** — Storage isolation via owner_id
+- [x] **Video support** — MP4, MOV, WebM, AVI, MKV with auto-thumbnails
+- [x] **WebP support** — Full-resolution WebP images with JPEG thumbnails
+- [x] **Enhanced Lightbox UI** — Double-click fullscreen, arrow key navigation always enabled
 
 ## 🚧 Future Enhancements
 
-- [ ] User authentication (OAuth, JWT)
-- [ ] Multiple user galleries (storage isolation)
-- [ ] AWS S3 storage (instead of local volume)
+- [ ] OAuth (Google, GitHub sign-in)
+- [ ] AWS S3 storage (feature profile)
 - [ ] Elasticsearch for full-text search
 - [ ] Image classification (tags via Claude Vision)
 - [ ] Collections/albums feature
+- [ ] Sharing & collaboration (view/edit permissions)

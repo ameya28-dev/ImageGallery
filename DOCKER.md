@@ -1,5 +1,12 @@
 # Docker Setup for ImageGallery (Local Profile + VS Code Debugging)
 
+## System Requirements
+
+- **Docker Desktop** (Windows/Mac) or Docker Engine (Linux) with Compose v2.0+
+- **Available Ports**: 3000 (frontend), 8000 (nginx), 5005 (Java debug), 9229 (Node debug)
+- **FFmpeg**: Automatically installed in backend container for video processing
+- **Anthropic API Key** (optional): For AI image descriptions
+
 ## Quick Start
 
 1. **Copy the env template** (optional for now):
@@ -17,10 +24,34 @@
 3. **Access the app**:
    - Frontend: http://localhost:3000
    - Backend API: http://localhost:8080/api/images
+   - API Docs: http://localhost:8000/swagger-ui.html
 
-4. **Verify existing data loads**:
-   - The gallery should show 5 pre-existing images (bind-mounted from `ImageAPI/src/main/resources/images/`).
-   - SQLite DB at `ImageAPI/data/gallery.db` is bind-mounted and persists across restarts.
+4. **Create your account**:
+   - Click "Register" on the login page
+   - Enter email and password
+   - You now have a personal gallery (multi-user, isolated per account)
+
+5. **Verify existing data loads**:
+   - The gallery should show 8 pre-existing seed images after first login
+   - SQLite DB at `ImageAPI/data/gallery.db` is bind-mounted and persists across restarts
+
+## Video & Image Processing
+
+### Video Support
+The backend container includes **FFmpeg** for:
+- Extracting first frames from video files for thumbnails
+- Parsing video metadata (duration, format info)
+- Supporting MP4, MOV, WebM, AVI, MKV, and WMV formats
+
+**Thumbnail Generation**: Videos automatically get thumbnails showing:
+- First frame from the video
+- Play button (▶️) in the bottom-right corner
+- Duration text (mm:ss or hh:mm:ss) displayed prominently
+
+### Image Format Support
+- **Standard formats**: JPG, PNG, GIF
+- **Modern formats**: WebP (with automatic JPEG thumbnail conversion)
+- **Thumbnails**: Auto-generated at 400×400px with intelligent aspect ratio preservation
 
 ## Debugging from VS Code
 
@@ -49,6 +80,38 @@ If you want to run without exposed debug ports:
 docker compose -f compose.yaml up --build
 ```
 (Omits the `compose.override.yaml` merge, so ports 5005/9229 aren't published.)
+
+## Database Browser (sqlite-web)
+
+Debug the SQLite database via a visual web UI:
+```bash
+docker compose --profile debug up -d sqlite-web
+```
+Then open http://localhost:8085 in your browser.
+
+**Notes:**
+- Opt-in only (requires `--profile debug` flag) — the raw database browser is not started by default.
+- Only useful when the backend runs the `local` Spring profile (SQLite). Under `feature` (PostgreSQL), this container has nothing to show.
+- Runs in read-only mode (`-r` flag) to prevent write contention with the backend's single-writer SQLite connection. If you need to edit/delete rows directly via the UI, you can override the `command:` in `compose.yaml` locally, accepting the risk of lock contention during heavy backend writes.
+
+To tear down the database browser:
+```bash
+docker compose --profile debug down sqlite-web
+```
+or just `docker compose down` to stop everything.
+
+## API Documentation (Swagger UI)
+
+Interactive API documentation is automatically available at http://localhost:8000/swagger-ui.html.
+
+- Enabled by default in both `local` and `feature` Spring profiles.
+- Displays all REST endpoints with request/response examples.
+- Click the **"Authorize"** button to supply a Bearer JWT token (e.g., from `POST /api/auth/login`) for testing owner-only endpoints.
+
+Example:
+1. Register/login to get a JWT: `POST /api/auth/login` (visible in Swagger UI)
+2. Click "Authorize" → paste `Bearer <your-jwt-token>`
+3. Try out any endpoint (e.g., `DELETE /api/images/{id}`, `PATCH /api/images/{id}/favourite`) directly from the browser.
 
 ## Code Changes After Build
 

@@ -7,12 +7,19 @@ A modern, containerized **personal image gallery** with AI-powered visual search
 ## ✨ Features
 
 - 📸 **Gallery View** — Browse images grouped by date
+- 🎬 **Video Support** — Upload and play MP4, MOV, WebM, AVI, MKV videos
+  - Auto-generated thumbnails with first frame + play button + duration
+  - Full video player with controls (play, pause, volume, fullscreen)
+- 📷 **WebP & Modern Formats** — Full-resolution WebP images with efficient thumbnails
+- 🔐 **Multi-User Authentication** — User registration, login, isolated galleries per account
+  - Personal image galleries with privacy control
+  - JWT-based secure authentication
 - 🔍 **Smart Search**
   - Tag-based filtering (exact match, case-insensitive)
   - AI-powered visual search (via Claude Vision API)
 - ❤️ **Favorites** — Mark and filter favorite images
 - 🏷️ **Tags** — Add/remove tags, autocomplete suggestions
-- 🖼️ **Image Viewer** — Fullscreen lightbox with keyboard navigation
+- 🖼️ **Image Viewer** — Fullscreen lightbox with keyboard navigation (arrow keys always work)
 - 📱 **Responsive UI** — Works on desktop and mobile
 - 🚀 **AI Descriptions** — Automatic one-sentence descriptions of uploaded images
 - 🔒 **Local Storage** — Everything stays on your machine (Docker volume)
@@ -65,12 +72,19 @@ docker compose down -v
 
 ## 📖 Usage
 
-### Adding Images
+### Authentication
+
+1. **First Time**: Click "Register" → enter email and password → create account
+2. **Returning Users**: Click "Login" → enter credentials → access your gallery
+3. Each user has a **private gallery** — images are not shared between accounts
+
+### Adding Images & Videos
 
 1. Click the **upload icon** (⬆️) in the top-right
-2. Select images to upload
+2. Select images (JPG, PNG, GIF, WebP) or videos (MP4, MOV, WebM, AVI, MKV)
 3. They appear in the gallery immediately
-4. AI descriptions are generated asynchronously
+4. **For videos**: Thumbnails auto-generate with the first frame, play button, and duration
+5. **For images**: AI descriptions are generated asynchronously (if API key configured)
 
 ### Searching
 
@@ -278,19 +292,25 @@ MIT (check LICENSE file if present)
 ## 🙋 FAQ
 
 **Q: Can I use this with multiple users?**  
-A: Not yet. Currently single-user local storage. Multi-user support planned.
+A: Yes! Multi-user authentication is fully implemented. Each user registers their own account and gets a private gallery.
+
+**Q: Can I upload videos?**  
+A: Yes! Supported formats: MP4, MOV, WebM, AVI, MKV, WMV. Thumbnails auto-generate with the first frame and duration badge.
+
+**Q: What image formats are supported?**  
+A: JPG, PNG, GIF, and WebP. All formats get efficient thumbnails (JPEG for WebP).
 
 **Q: How large can the gallery be?**  
-A: Limited by disk space. Tested with 1000+ images. SQLite handles it fine.
+A: Limited by disk space. Tested with 1000+ images. SQLite (local profile) and PostgreSQL (feature profile) both handle large galleries fine.
 
 **Q: Do I need an API key?**  
-A: No! Gallery works fully without one. AI descriptions just won't work.
+A: No! Gallery works fully without one. AI descriptions for images just won't work without the Anthropic API key.
 
 **Q: Can I export my data?**  
-A: Yes, the Docker volume is just a folder. You can backup the `.db` file and images.
+A: Yes, the Docker volume is just a folder. You can backup the `.db` file and images/videos.
 
 **Q: How long does first startup take?**  
-A: 30-60 seconds (building images, seeding data). Subsequent starts: ~10 seconds.
+A: 30-60 seconds (building images, seeding data, downloading FFmpeg). Subsequent starts: ~10 seconds.
 
 ---
 

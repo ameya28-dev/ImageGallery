@@ -2,6 +2,7 @@ package com.imagegallery.controller;
 
 import com.imagegallery.dto.AuthResponse;
 import com.imagegallery.dto.LoginRequest;
+import com.imagegallery.dto.RegisterRequest;
 import com.imagegallery.service.AuthService;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -27,6 +28,13 @@ public class AuthController {
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request,
                                               HttpServletResponse response) {
         return ResponseEntity.ok(authService.login(request, response));
+    }
+
+    /** Self-service email + password registration. */
+    @PostMapping("/register")
+    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request,
+                                                  HttpServletResponse response) {
+        return ResponseEntity.ok(authService.register(request, response));
     }
 
     /** Silent token refresh using the httpOnly refresh cookie. */

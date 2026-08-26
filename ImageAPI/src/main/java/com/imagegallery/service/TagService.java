@@ -13,20 +13,22 @@ public class TagService {
 
     private final TagRepository tagRepository;
 
-    public List<String> autocomplete(String prefix) {
+    /**
+     * Autocomplete tag names for an owner, by prefix.
+     * Only tags from images owned by this caller are suggested.
+     */
+    public List<String> autocomplete(Long ownerId, String prefix) {
         if (prefix == null || prefix.isBlank()) {
-            return tagRepository.findAll().stream()
-                    .map(t -> t.getName())
-                    .sorted()
-                    .toList();
+            return tagRepository.findAllNamesForOwner(ownerId);
         }
-        return tagRepository.findByNameStartingWithIgnoreCaseOrderByName(prefix)
-                .stream()
-                .map(t -> t.getName())
-                .toList();
+        return tagRepository.findByPrefixForOwner(ownerId, prefix);
     }
 
-    public List<TagCountDto> getRanked() {
-        return tagRepository.findAllRankedByImageCount();
+    /**
+     * Get tags ranked by frequency for an owner.
+     * Only tags from images owned by this caller are ranked.
+     */
+    public List<TagCountDto> getRanked(Long ownerId) {
+        return tagRepository.findRankedForOwner(ownerId);
     }
 }

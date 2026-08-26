@@ -1,6 +1,7 @@
 package com.imagegallery.controller;
 
 import com.imagegallery.dto.TagCountDto;
+import com.imagegallery.security.CurrentUserResolver;
 import com.imagegallery.service.TagService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.CacheControl;
@@ -18,20 +19,21 @@ import java.util.List;
 public class TagController {
 
     private final TagService tagService;
+    private final CurrentUserResolver currentUserResolver;
 
     @GetMapping
     public ResponseEntity<List<String>> getTags(@RequestParam(required = false) String prefix) {
-        // Tags can change when new tags are added or removed, so don't cache
+        Long ownerId = currentUserResolver.resolveOwnerId().orElse(null);
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.noCache().noStore().mustRevalidate())
-                .body(tagService.autocomplete(prefix));
+                .body(tagService.autocomplete(ownerId, prefix));
     }
 
     @GetMapping("/ranked")
     public ResponseEntity<List<TagCountDto>> getRanked() {
-        // Tag rankings change when images are tagged/untagged, so don't cache
+        Long ownerId = currentUserResolver.resolveOwnerId().orElse(null);
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.noCache().noStore().mustRevalidate())
-                .body(tagService.getRanked());
+                .body(tagService.getRanked(ownerId));
     }
 }

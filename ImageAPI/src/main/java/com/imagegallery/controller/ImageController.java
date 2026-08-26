@@ -8,6 +8,7 @@ import com.imagegallery.dto.ImageDto;
 import com.imagegallery.dto.ImageGroupDto;
 import com.imagegallery.dto.TagDto;
 import com.imagegallery.exception.ApiException;
+import com.imagegallery.security.CurrentUserResolver;
 import com.imagegallery.service.ImageDescriptionService;
 import com.imagegallery.service.ImageService;
 import jakarta.validation.Valid;
@@ -41,6 +42,11 @@ public class ImageController {
 
     private final ImageService imageService;
     private final ImageDescriptionService imageDescriptionService;
+    private final CurrentUserResolver currentUserResolver;
+
+    private Long resolveOwnerId() {
+        return currentUserResolver.resolveOwnerId().orElse(null);
+    }
 
     @GetMapping
     public ResponseEntity<List<ImageGroupDto>> listImages(
@@ -49,24 +55,22 @@ public class ImageController {
             @RequestParam(required = false) List<String> tags,
             @RequestParam(required = false) String type,
             @RequestParam(required = false) Boolean favourites) {
-        // Visual content search takes priority when q is provided
+        Long ownerId = resolveOwnerId();
         List<ImageGroupDto> results;
         if (q != null && !q.isBlank()) {
-            results = imageService.searchByContent(q);
+            results = imageService.searchByContent(ownerId, q);
 
             // If search returned no results AND there are images with failed descriptions,
-            // it likely means the Vision API had issues (quota/auth/etc), not a genuine zero-match.
-            // Report the underlying API error instead of "No results found".
-            if (results.isEmpty() && imageService.hasFailedDescriptions()) {
-                String errorType = imageService.getMostRecentDescriptionErrorType()
+            // report the underlying API error instead of "No results found".
+            if (results.isEmpty() && imageService.hasFailedDescriptions(ownerId)) {
+                String errorType = imageService.getMostRecentDescriptionErrorType(ownerId)
                         .orElse("UNKNOWN_ERROR");
                 throw ApiException.fromErrorType(ApiException.ErrorType.valueOf(errorType));
             }
         } else {
-            results = imageService.getImages(tag, tags, type, favourites);
+            results = imageService.getImages(ownerId, tag, tags, type, favourites);
         }
 
-        // Metadata changes frequently (tags, favorites), so don't cache
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.noCache().noStore().mustRevalidate())
                 .body(results);
@@ -74,26 +78,28 @@ public class ImageController {
 
     @GetMapping("/counts")
     public ResponseEntity<Map<String, Long>> mediaCounts() {
-        // Counts change when images are added/removed, so don't cache
+        Long ownerId = resolveOwnerId();
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.noCache().noStore().mustRevalidate())
-                .body(imageService.getMediaCounts());
+                .body(imageService.getMediaCounts(ownerId));
     }
 
-    // Images keyed by ID are immutable (delete+reupload always produces a new ID),
-    // so a 1-year immutable cache is safe for both thumbnails and full images.
-    private static final CacheControl IMAGE_CACHE =
-            CacheControl.maxAge(365, TimeUnit.DAYS).cachePublic().immutable();
+    private static final CacheControl IMAGE_CACHE = CacheControl.noCache();
 
     @GetMapping("/{id}/thumbnail")
     public ResponseEntity<byte[]> getThumbnail(@PathVariable Long id) throws IOException {
         try {
-            ImageService.StreamResult result = imageService.getThumbnailStream(id);
+            // Thumbnails are always public — no ownership check required
+            ImageService.StreamResult result = imageService.getThumbnailStreamPublic(id);
             try (InputStream stream = result.stream()) {
+                byte[] bytes = stream.readAllBytes();
+                String eTag = "\"" + Integer.toHexString(java.util.Arrays.hashCode(bytes)) + "\"";
                 return ResponseEntity.ok()
                         .contentType(MediaType.parseMediaType(thumbnailContentTypeFor(result.filename())))
                         .cacheControl(IMAGE_CACHE)
-                        .body(stream.readAllBytes());
+                        .eTag(eTag)
+                        .lastModified(result.lastModified())
+                        .body(bytes);
             }
         } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();
@@ -102,8 +108,10 @@ public class ImageController {
 
     @GetMapping("/{id}/full")
     public ResponseEntity<StreamingResponseBody> getFullImage(@PathVariable Long id) {
+        Long ownerId = resolveOwnerId();
         try {
-            ImageService.StreamResult result = imageService.getFullImageStream(id);
+            ImageService.StreamResult result = imageService.getFullImageStream(ownerId, id);
+            String eTag = "\"" + result.lastModified().toEpochMilli() + "\"";
             StreamingResponseBody body = out -> {
                 try (InputStream in = result.stream()) {
                     in.transferTo(out);
@@ -112,15 +120,14 @@ public class ImageController {
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType(contentTypeFor(result.filename())))
                     .cacheControl(IMAGE_CACHE)
+                    .eTag(eTag)
+                    .lastModified(result.lastModified())
                     .body(body);
         } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();
         }
     }
 
-    /**
-     * MIME type for the original stored file.
-     */
     private String contentTypeFor(String filename) {
         String lower = filename.toLowerCase();
         if (lower.endsWith(".png")) return "image/png";
@@ -136,9 +143,6 @@ public class ImageController {
         return "image/jpeg";
     }
 
-    /**
-     * MIME type for the thumbnail (Thumbnailator converts HEIC/etc. to JPEG).
-     */
     private String thumbnailContentTypeFor(String filename) {
         String lower = filename.toLowerCase();
         if (lower.endsWith(".png")) return "image/png";
@@ -149,8 +153,9 @@ public class ImageController {
 
     @PatchMapping("/{id}/favourite")
     public ResponseEntity<ImageDto> toggleFavourite(@PathVariable Long id) {
+        Long ownerId = resolveOwnerId();
         try {
-            return ResponseEntity.ok(imageService.toggleFavourite(id));
+            return ResponseEntity.ok(imageService.toggleFavourite(ownerId, id));
         } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();
         }
@@ -158,8 +163,9 @@ public class ImageController {
 
     @PostMapping("/{id}/tags")
     public ResponseEntity<ImageDto> addTag(@PathVariable Long id, @Valid @RequestBody TagDto body) {
+        Long ownerId = resolveOwnerId();
         try {
-            return ResponseEntity.ok(imageService.addTag(id, body.getTag()));
+            return ResponseEntity.ok(imageService.addTag(ownerId, id, body.getTag()));
         } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();
         }
@@ -167,8 +173,9 @@ public class ImageController {
 
     @DeleteMapping("/{id}/tags/{tagName}")
     public ResponseEntity<ImageDto> removeTag(@PathVariable Long id, @PathVariable String tagName) {
+        Long ownerId = resolveOwnerId();
         try {
-            return ResponseEntity.ok(imageService.removeTag(id, tagName));
+            return ResponseEntity.ok(imageService.removeTag(ownerId, id, tagName));
         } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();
         }
@@ -176,8 +183,9 @@ public class ImageController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteImage(@PathVariable Long id) {
+        Long ownerId = resolveOwnerId();
         try {
-            imageService.deleteImage(id);
+            imageService.deleteImage(ownerId, id);
             return ResponseEntity.noContent().build();
         } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();
@@ -187,11 +195,11 @@ public class ImageController {
     /**
      * Owner-only: queue visual description for every image that doesn't have one.
      * Runs asynchronously — returns immediately with a count of queued jobs.
-     * Useful for backfilling descriptions on images uploaded before this feature existed.
      */
     @PostMapping("/describe-all")
     public ResponseEntity<Map<String, Object>> describeAll() {
-        List<Long> missing = imageService.getImagesWithoutDescription();
+        Long ownerId = resolveOwnerId();
+        List<Long> missing = imageService.getImagesWithoutDescription(ownerId);
         missing.forEach(imageDescriptionService::describeAndSave);
         return ResponseEntity.accepted()
                 .body(Map.of("queued", missing.size(),
@@ -201,9 +209,10 @@ public class ImageController {
     @DeleteMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteImages(@RequestBody List<Long> ids) {
+        Long ownerId = resolveOwnerId();
         for (Long id : ids) {
             try {
-                imageService.deleteImage(id);
+                imageService.deleteImage(ownerId, id);
             } catch (NoSuchElementException ignored) {
             }
         }
@@ -211,13 +220,13 @@ public class ImageController {
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> upload(@RequestParam("file") MultipartFile file) {
+        Long ownerId = resolveOwnerId();
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body("No file provided");
         }
         try {
             LocalDateTime takenAt = extractExifDate(file.getBytes());
-            ImageDto dto = imageService.uploadAndRegister(file, takenAt);
-            // Trigger async vision description — runs in background, doesn't delay response
+            ImageDto dto = imageService.uploadAndRegister(ownerId, file, takenAt);
             imageDescriptionService.describeAndSave(dto.getId());
             return ResponseEntity.ok(dto);
         } catch (IllegalArgumentException e) {

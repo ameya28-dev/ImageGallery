@@ -46,6 +46,8 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                // CORS preflight requests are always allowed and never require auth
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 // Auth endpoints are always public
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
@@ -54,6 +56,13 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/tags/**").permitAll()
                 // Guest single upload (rate limit enforced by GuestUploadInterceptor)
                 .requestMatchers(HttpMethod.POST, "/api/images").permitAll()
+                // API documentation (Swagger UI + OpenAPI JSON/YAML) — public in every profile
+                .requestMatchers(
+                        "/swagger-ui/**",
+                        "/swagger-ui.html",
+                        "/v3/api-docs/**",
+                        "/v3/api-docs.yaml"
+                ).permitAll()
                 // Everything else requires a valid owner JWT
                 .anyRequest().authenticated()
             )

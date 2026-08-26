@@ -5,6 +5,7 @@ import com.drew.imaging.ImageProcessingException;
 import com.drew.metadata.Metadata;
 import com.drew.metadata.exif.ExifSubIFDDirectory;
 import com.imagegallery.config.GalleryProperties;
+import com.imagegallery.repository.ImageRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -41,6 +42,7 @@ public class LocalImageScanner {
 
     private final GalleryProperties properties;
     private final ImageService imageService;
+    private final ImageRepository imageRepository;
     private final StorageService storageService;
     private final ThumbnailService thumbnailService;
     private final ImageDescriptionService imageDescriptionService;
@@ -75,14 +77,14 @@ public class LocalImageScanner {
     /**
      * Seed default gallery on first run (when gallery is empty).
      * Copies seed images from seed-data/ into the configured images-path.
-     * Uses imageService.getMediaCounts() to check if any images exist (more reliable than count).
+     * Searches the public seed pool (ownerId = null).
      */
     private void seedDefaultDataIfEmpty() {
-        // Check if gallery is empty by looking for any indexed images
-        var imageCount = imageService.getImages(null, null, null, null).stream()
+        // Check if the public seed pool (ownerId = null) has any images
+        var imageCount = imageService.getImages(null, null, null, null, null).stream()
                 .flatMap(g -> g.getImages().stream()).count();
         if (imageCount > 0) {
-            return; // Gallery already has data, don't re-seed
+            return; // Seed pool already has data, don't re-seed
         }
         Path seedPath = Paths.get("seed-data/images");
         if (!Files.exists(seedPath)) {
@@ -113,9 +115,9 @@ public class LocalImageScanner {
     }
 
     /**
-     * Apply tags and favourite flags from seed-metadata.json to seeded images.
+     * Apply tags and favourite flags from seed-metadata.json to seeded images in the public pool.
      * Only applies to images that exist in the just-scanned gallery.
-     * Fetches all images once to avoid repeated queries and potential lock contention.
+     * Passes ownerId = null to operate on the public seed pool only.
      */
     private void applySeedMetadata() {
         Path metadataPath = Paths.get("seed-data/seed-metadata.json");
@@ -129,8 +131,8 @@ public class LocalImageScanner {
                     List.class
             );
 
-            // Fetch all images once, then build a filename->image map for efficient lookup
-            var allImages = imageService.getImages(null, null, null, null).stream()
+            // Fetch all seed-pool images once, then build a filename->image map for efficient lookup
+            var allImages = imageService.getImages(null, null, null, null, null).stream()
                     .flatMap(g -> g.getImages().stream())
                     .toList();
             var imagesByFilename = new java.util.HashMap<String, com.imagegallery.dto.ImageDto>();
@@ -152,16 +154,16 @@ public class LocalImageScanner {
                         continue;
                     }
 
-                    // Apply tags via the existing service method
+                    // Apply tags via owner-scoped service method (ownerId = null for public pool)
                     if (tags != null && !tags.isEmpty()) {
                         for (String tag : tags) {
-                            imageService.addTag(image.getId(), tag);
+                            imageService.addTag(null, image.getId(), tag);
                         }
                     }
 
                     // Apply favourite flag
                     if (favourite != null && favourite && !image.isFavourite()) {
-                        imageService.toggleFavourite(image.getId());
+                        imageService.toggleFavourite(null, image.getId());
                     }
 
                     appliedCount++;
@@ -176,22 +178,15 @@ public class LocalImageScanner {
         }
     }
 
-    /** Backfill descriptions for images that don't have one yet (async, sequential to avoid SQLite lock contention). */
+    /** Backfill descriptions for seed-pool images that don't have one yet (async, serialized by single-threaded executor). */
     private void backfillMissingDescriptions() {
-        var missingIds = imageService.getImagesWithoutDescription();
+        // Get missing descriptions for the seed pool only (ownerId = null)
+        var missingIds = imageService.getImagesWithoutDescription(null);
         if (missingIds.isEmpty()) return;
-        log.info("Backfilling descriptions for {} images without descriptions (async)", missingIds.size());
-        // Fire async tasks sequentially with small delays to avoid overwhelming SQLite with concurrent writes.
-        // Each describeAndSave is async but we space them out to reduce lock contention.
+        log.info("Backfilling descriptions for {} seed-pool images without descriptions (async)", missingIds.size());
+        // Fire async tasks — they're serialized by AsyncConfig's single-threaded executor, no manual staggering needed.
         for (long imageId : missingIds) {
             imageDescriptionService.describeAndSave(imageId);
-            try {
-                Thread.sleep(100); // Small delay between async task submissions
-            } catch (InterruptedException e) {
-                log.warn("Backfill interrupted");
-                Thread.currentThread().interrupt();
-                break;
-            }
         }
     }
 
@@ -211,12 +206,19 @@ public class LocalImageScanner {
 
     private void indexFile(Path path) {
         String filename = path.getFileName().toString();
-        if (imageService.existsByFilename(filename)) {
-            return;
-        }
+        // For filesystem-scanned images, use the original filename as the storage key
+        // (files are already on disk with those names from seedDefaultDataIfEmpty).
+        // Collision-proof keys only apply to NEW uploads via the REST API.
         try {
+            // Skip if this image is already in the database (for the guest/seed pool, ownerId=null)
+            if (imageRepository.existsByOwnerIdAndFilename(null, filename)) {
+                log.debug("Already indexed: {}", filename);
+                return;
+            }
+
             byte[] thumbBytes;
             LocalDateTime takenAt;
+            String thumbExt = imageService.thumbnailFormatFor(filename);
 
             if (isVideoFile(filename)) {
                 takenAt = fileLastModified(path);
@@ -232,8 +234,10 @@ public class LocalImageScanner {
                 }
             }
 
+            // For scanned images, store thumbnail with filename as key (no collision risk for seed images)
             storageService.storeThumbnail(filename, new ByteArrayInputStream(thumbBytes), thumbBytes.length);
-            var image = imageService.registerScannedImage(filename, filename, takenAt);
+            // Register with original filename as both s3Key and thumbnailKey (already on disk with this name)
+            var image = imageService.registerScannedImage(filename, filename, filename, takenAt);
             // Hook new scanned images into the description pipeline (async, non-blocking)
             imageDescriptionService.describeAndSave(image.getId());
             log.info("Indexed: {}", filename);
@@ -241,6 +245,7 @@ public class LocalImageScanner {
             log.warn("Skipping {} — {}", filename, e.getMessage());
         }
     }
+
 
     private LocalDateTime extractExifDate(byte[] bytes, String filename, LocalDateTime fallback) {
         try {

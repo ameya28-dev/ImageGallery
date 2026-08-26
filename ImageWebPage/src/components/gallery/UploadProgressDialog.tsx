@@ -18,7 +18,7 @@ export default function UploadProgressDialog({ current, total, skipped }: Upload
         </p>
         {skipped > 0 && (
           <p className="text-yellow-500 text-xs">
-            {skipped} already in gallery
+            {skipped} {skipped === 1 ? 'file' : 'files'} skipped (duplicates or errors)
           </p>
         )}
       </div>

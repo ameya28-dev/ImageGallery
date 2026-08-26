@@ -4,6 +4,8 @@ import { useState, useRef } from "react";
 import { Search, MoreVertical, X, Heart, LogIn, LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/components/ui/Toast";
+import SignOutDialog from "@/components/ui/SignOutDialog";
 
 interface GalleryHeaderProps {
   onSelectMode: () => void;
@@ -27,7 +29,9 @@ export default function GalleryHeader({
 }: GalleryHeaderProps) {
   const router = useRouter();
   const { isOwner, user, logout } = useAuth();
+  const { showToast } = useToast();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [signOutOpen, setSignOutOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -38,7 +42,9 @@ export default function GalleryHeader({
 
   const handleLogout = async () => {
     setMenuOpen(false);
+    setSignOutOpen(false);
     await logout();
+    showToast("Signed out");
   };
 
   return (
@@ -117,7 +123,7 @@ export default function GalleryHeader({
               <>
                 <p className="px-4 py-2 text-xs text-gray-500 truncate">{user?.email}</p>
                 <button
-                  onClick={handleLogout}
+                  onClick={() => { setMenuOpen(false); setSignOutOpen(true); }}
                   className="w-full flex items-center gap-2 text-left py-3 px-4 hover:bg-white/10 rounded-lg text-sm text-red-400"
                 >
                   <LogOut size={15} />
@@ -136,6 +142,13 @@ export default function GalleryHeader({
           </div>
         </>
       )}
+
+      {/* Sign out confirmation dialog */}
+      <SignOutDialog
+        open={signOutOpen}
+        onClose={() => setSignOutOpen(false)}
+        onConfirm={handleLogout}
+      />
     </div>
   );
 }

@@ -2,6 +2,8 @@ package com.imagegallery.service;
 
 import com.imagegallery.dto.AuthResponse;
 import com.imagegallery.dto.LoginRequest;
+import com.imagegallery.dto.RegisterRequest;
+import com.imagegallery.exception.AuthException;
 import com.imagegallery.model.User;
 import com.imagegallery.repository.UserRepository;
 import jakarta.servlet.http.HttpServletResponse;
@@ -14,6 +16,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -70,10 +73,52 @@ public class AuthService {
 
     /** Email+password login. Issues tokens and sets refresh cookie. */
     public AuthResponse login(LoginRequest request, HttpServletResponse response) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.email(), request.password())
-        );
-        User user = userRepository.findByEmail(request.email()).orElseThrow();
+        // First, check if the user account exists
+        var userOpt = userRepository.findByEmail(request.email());
+
+        if (userOpt.isEmpty()) {
+            // User doesn't exist — provide specific error type
+            throw new AuthException(
+                    "Account doesn't exist. Please create one.",
+                    AuthException.ErrorType.USER_NOT_FOUND,
+                    400
+            );
+        }
+
+        try {
+            // Attempt authentication
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.email(), request.password())
+            );
+        } catch (BadCredentialsException e) {
+            // Wrong password
+            throw new AuthException(
+                    "Incorrect password. Please try again.",
+                    AuthException.ErrorType.INVALID_PASSWORD,
+                    401
+            );
+        }
+
+        User user = userOpt.get();
+        return issueTokenPair(user, response);
+    }
+
+    /** Self-service registration. Creates a new user account and issues tokens. */
+    public AuthResponse register(RegisterRequest request, HttpServletResponse response) {
+        // Check if email is already registered
+        if (userRepository.findByEmail(request.email()).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered");
+        }
+
+        // Create and save the new user
+        User user = new User();
+        user.setEmail(request.email());
+        user.setPasswordHash(passwordEncoder.encode(request.password()));
+        user.setProvider("LOCAL");
+        userRepository.save(user);
+        log.info("New user registered: {}", request.email());
+
+        // Issue tokens immediately (auto-login on registration)
         return issueTokenPair(user, response);
     }
 

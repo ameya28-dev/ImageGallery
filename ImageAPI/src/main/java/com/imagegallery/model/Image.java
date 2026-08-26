@@ -20,7 +20,7 @@ public class Image {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 255)
+    @Column(nullable = false, length = 255)
     private String filename;
 
     @Column(name = "s3_key", length = 512)
@@ -46,6 +46,22 @@ public class Image {
     /** Error type (ApiException.ErrorType name) when descriptionStatus = FAILED. */
     @Column(name = "description_error", length = 40)
     private String descriptionError;
+
+    /** Owner ID (nullable). NULL = public/guest seed pool. Non-null = private gallery of a user. */
+    @Column(name = "owner_id")
+    private Long ownerId;
+
+    /** Dedicated thumbnail storage key. Uses same fallback pattern as s3Key for pre-migration rows. */
+    @Column(name = "thumbnail_key", length = 512)
+    private String thumbnailKey;
+
+    /** True only for the 8 curated seed images in seed-data/. Distinguishes them from accumulated guest uploads. */
+    @Column(name = "is_seed_sample", nullable = false)
+    private boolean seedSample = false;
+
+    /** Video duration in seconds (null for non-video files). */
+    @Column(name = "video_duration")
+    private Double videoDuration;
 
     @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(

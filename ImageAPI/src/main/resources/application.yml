@@ -7,6 +7,9 @@ spring:
     multipart:
       max-file-size: 50MB
       max-request-size: 50MB
+  task:
+    execution:
+      thread-name-prefix: disabled-  # Disable Spring's default async executor (using manual worker thread instead)
 
 server:
   port: 8080
@@ -36,14 +39,22 @@ ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:}
 ---
 # ----------------------------------------------------
 # LOCAL PROFILE (SQLite & Local Storage)
+# CRITICAL: Single-connection pool + busy_timeout + WAL mode for SQLite
+# SQLite allows exactly one writer at a time. WAL mode allows readers while writer is active.
+# busy_timeout=30000 (30s) ensures the JDBC driver waits for locks instead of failing instantly.
+# single_connection=true disables connection pooling (SQLite doesn't benefit from pooling).
+# journal_mode=wal enables Write-Ahead Logging for concurrent reads.
 # ----------------------------------------------------
 spring:
   config:
     activate:
       on-profile: local
   datasource:
-    url: jdbc:sqlite:./data/gallery.db
+    url: jdbc:sqlite:./data/gallery.db?busy_timeout=30000&journal_mode=WAL
     driver-class-name: org.sqlite.JDBC
+    hikari:
+      maximum-pool-size: 1
+      minimum-idle: 1
   jpa:
     database-platform: org.hibernate.community.dialect.SQLiteDialect
     hibernate:

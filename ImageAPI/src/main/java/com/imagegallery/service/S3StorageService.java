@@ -6,11 +6,16 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.InputStream;
+import java.time.Instant;
+
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 
 // TODO: For production on AWS (EC2/ECS/Lambda), remove explicit credentials from S3Config
 //       and rely on the instance's IAM role instead. The SDK will auto-discover them via
@@ -76,6 +81,24 @@ public class S3StorageService implements StorageService {
     }
 
     @Override
+    public Instant getImageLastModified(String storageKey) {
+        HeadObjectResponse response = s3Client.headObject(HeadObjectRequest.builder()
+                .bucket(properties.getS3().getBucketName())
+                .key(storageKey)
+                .build());
+        return response.lastModified();
+    }
+
+    @Override
+    public Instant getThumbnailLastModified(String storageKey) {
+        HeadObjectResponse response = s3Client.headObject(HeadObjectRequest.builder()
+                .bucket(properties.getS3().getBucketName())
+                .key(THUMBNAIL_PREFIX + storageKey)
+                .build());
+        return response.lastModified();
+    }
+
+    @Override
     public void deleteImage(String storageKey, String thumbnailKey) {
         s3Client.deleteObject(DeleteObjectRequest.builder()
                 .bucket(properties.getS3().getBucketName())
@@ -84,6 +107,28 @@ public class S3StorageService implements StorageService {
         s3Client.deleteObject(DeleteObjectRequest.builder()
                 .bucket(properties.getS3().getBucketName())
                 .key(THUMBNAIL_PREFIX + thumbnailKey)
+                .build());
+    }
+
+    @Override
+    public void copyImage(String sourceKey, String destKey) {
+        String bucket = properties.getS3().getBucketName();
+        s3Client.copyObject(CopyObjectRequest.builder()
+                .sourceBucket(bucket)
+                .sourceKey(sourceKey)
+                .destinationBucket(bucket)
+                .destinationKey(destKey)
+                .build());
+    }
+
+    @Override
+    public void copyThumbnail(String sourceKey, String destKey) {
+        String bucket = properties.getS3().getBucketName();
+        s3Client.copyObject(CopyObjectRequest.builder()
+                .sourceBucket(bucket)
+                .sourceKey(sourceKey)
+                .destinationBucket(bucket)
+                .destinationKey(destKey)
                 .build());
     }
 }

@@ -1,6 +1,7 @@
 package com.imagegallery.controller;
 
 import com.imagegallery.exception.ApiException;
+import com.imagegallery.exception.AuthException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -8,6 +9,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.io.UncheckedIOException;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
@@ -34,6 +36,22 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handles authentication and authorization errors with detailed error types.
+     * Allows frontend to distinguish between user-not-found, wrong password, etc.
+     */
+    @ExceptionHandler(AuthException.class)
+    public ResponseEntity<Map<String, String>> handleAuthException(AuthException e) {
+        log.warn("Auth error [{}]: {}", e.getErrorType(), e.getMessage());
+
+        return ResponseEntity
+                .status(e.getHttpStatus())
+                .body(Map.of(
+                        "errorType", e.getErrorType().name(),
+                        "message", e.getMessage()
+                ));
+    }
+
+    /**
      * Handles API exceptions from external services (e.g., Anthropic Vision API).
      * Returns the HTTP status code indicated by the exception along with a user-friendly error message.
      */
@@ -49,5 +67,18 @@ public class GlobalExceptionHandler {
                         "error", e.getErrorType().name(),
                         "message", e.getMessage()
                 ));
+    }
+
+    /**
+     * Handles storage layer I/O exceptions (file not found, permission denied, etc.).
+     * Returns a clean 500 error instead of letting the exception leak through filter chain
+     * and surface as an inconsistent or cryptic status code.
+     */
+    @ExceptionHandler(UncheckedIOException.class)
+    public ResponseEntity<Map<String, String>> handleStorageException(UncheckedIOException e) {
+        log.error("Storage I/O error: {}", e.getMessage());
+        return ResponseEntity
+                .status(500)
+                .body(Map.of("error", "Storage error: " + e.getMessage()));
     }
 }

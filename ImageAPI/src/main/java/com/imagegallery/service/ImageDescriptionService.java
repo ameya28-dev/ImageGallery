@@ -8,26 +8,31 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import java.io.InputStream;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Objects;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Calls the Anthropic Vision API to generate a one-sentence description of each
  * uploaded image. Descriptions are stored in {@code images.ai_description} and
  * used by the visual content search feature ({@code GET /api/images?q=rocket}).
  *
- * <p>The {@link #describeAndSave(Long)} method is {@code @Async} — it runs in a
- * background thread and never blocks the HTTP upload response.
+ * <p>Image descriptions are queued by {@link #describeAndSave(Long)} and processed
+ * by a single background worker thread — guaranteed serialization without fighting
+ * Spring's @Async executor resolution. The worker thread processes descriptions
+ * one at a time, preventing SQLite lock contention (SQLite allows exactly one writer;
+ * multiple concurrent threads cause SQLITE_BUSY errors).
  */
 @Slf4j
 @Service
@@ -49,20 +54,69 @@ public class ImageDescriptionService {
     private final RestClient restClient = RestClient.create();
 
     // -------------------------------------------------------------------------
+    // Worker thread and queue — one thread processes descriptions sequentially
+    // -------------------------------------------------------------------------
+
+    private final BlockingQueue<Long> descriptionQueue = new LinkedBlockingQueue<>();
+    private Thread workerThread;
+
+    @PostConstruct
+    public void startWorker() {
+        workerThread = new Thread(() -> {
+            log.info("Image description worker thread started");
+            while (!Thread.currentThread().isInterrupted()) {
+                try {
+                    Long imageId = descriptionQueue.take();
+                    processDescription(imageId);
+                } catch (InterruptedException e) {
+                    log.debug("Image description worker interrupted");
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+            log.info("Image description worker thread stopped");
+        }, "image-description-worker");
+        workerThread.setDaemon(false);  // don't die silently if not explicitly interrupted
+        workerThread.start();
+    }
+
+    @PreDestroy
+    public void stopWorker() {
+        if (workerThread != null) {
+            workerThread.interrupt();
+            try {
+                workerThread.join(5000);  // wait up to 5s for graceful shutdown
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------
     // Public API
     // -------------------------------------------------------------------------
 
     /**
-     * Asynchronously describe a single image and persist the result.
-     * Safe to call immediately after {@code uploadAndRegister} — runs in a
-     * separate thread after the upload transaction has committed.
+     * Queue an image for description processing.
+     * Non-blocking — returns immediately. Processing happens asynchronously
+     * by the background worker thread, serialized to prevent SQLite lock contention.
      *
-     * Sets descriptionStatus to SUCCESS/FAILED/SKIPPED so search logic can
-     * accurately report why a query returned no results.
+     * @param imageId the ID of the image to describe
      */
-    @Async
-    @Transactional
     public void describeAndSave(Long imageId) {
+        descriptionQueue.offer(imageId);
+    }
+
+    // -------------------------------------------------------------------------
+    // Worker processing
+    // -------------------------------------------------------------------------
+
+    /**
+     * Process a single image description in the background worker thread.
+     * Wrapped in its own @Transactional to ensure DB writes are committed independently.
+     */
+    @Transactional
+    private void processDescription(Long imageId) {
         try {
             Image image = imageRepository.findById(imageId).orElse(null);
             if (image == null || image.getAiDescription() != null) return; // already done
@@ -87,9 +141,13 @@ public class ImageDescriptionService {
                 log.warn("Failed to describe image {} [{}]: {} ({})", imageId, image.getFilename(), e.getErrorType(), e.getMessage());
             }
         } catch (Exception e) {
-            log.warn("Failed to describe image {}: {}", imageId, e.getMessage());
+            log.warn("Failed to process description for image {}: {}", imageId, e.getMessage());
         }
     }
+
+    // -------------------------------------------------------------------------
+    // Internal helpers
+    // -------------------------------------------------------------------------
 
     /**
      * Returns the count of images that still lack a description.
@@ -99,11 +157,6 @@ public class ImageDescriptionService {
     public int countMissingDescriptions() {
         return imageRepository.findByAiDescriptionIsNull().size();
     }
-
-
-    // -------------------------------------------------------------------------
-    // Internal helpers
-    // -------------------------------------------------------------------------
 
     /**
      * Decides how to produce a description — vision API for images, filename for videos.
@@ -182,7 +235,7 @@ public class ImageDescriptionService {
             // Detect specific API errors from Anthropic
             ErrorType errorType = classifyApiError(e.getStatusCode().value(), e.getResponseBodyAsString());
             ApiException apiException = new ApiException(
-                    formatErrorMessage(errorType),
+                    "Vision API request failed: " + errorType,
                     errorType,
                     e.getStatusCode().value(),
                     e
@@ -210,45 +263,30 @@ public class ImageDescriptionService {
             return ErrorType.AUTHENTICATION_FAILED;
         }
         if (statusCode == 429) {
-            // 429 = rate limit or quota exceeded
-            // Check if response mentions usage limits or billing
-            if (responseBody != null && (responseBody.contains("usage") || responseBody.contains("limit") || responseBody.contains("quota"))) {
-                return ErrorType.QUOTA_EXCEEDED;
-            }
             return ErrorType.QUOTA_EXCEEDED;
-        }
-        if (statusCode == 400) {
-            return ErrorType.INVALID_REQUEST;
         }
         if (statusCode >= 500) {
             return ErrorType.TRANSIENT_ERROR;
         }
-        return ErrorType.UNKNOWN_ERROR;
+        if (responseBody.contains("overloaded")) {
+            return ErrorType.TRANSIENT_ERROR;
+        }
+        return ErrorType.INVALID_REQUEST;
     }
 
     /**
-     * Formats an error message appropriate for end users based on error type.
+     * Returns the media type for a thumbnail based on its filename.
      */
-    private String formatErrorMessage(ErrorType errorType) {
-        return switch (errorType) {
-            case AUTHENTICATION_FAILED -> "API key is invalid or expired. Please check configuration.";
-            case QUOTA_EXCEEDED -> "Visual search quota exceeded. Please upgrade your plan or try again later.";
-            case INVALID_REQUEST -> "Unable to process your request. Please try again.";
-            case TRANSIENT_ERROR -> "Temporary service issue. Please try again.";
-            case UNKNOWN_ERROR -> "An error occurred during visual search. Please try again.";
-        };
+    private String thumbnailMediaType(String filename) {
+        String lower = filename.toLowerCase();
+        if (lower.endsWith(".png")) return "image/png";
+        if (lower.endsWith(".gif")) return "image/gif";
+        if (lower.endsWith(".webp")) return "image/webp";
+        return "image/jpeg";
     }
 
     private boolean isVideo(String filename) {
-        int dot = filename.lastIndexOf('.');
-        return dot >= 0 && VIDEO_EXTS.contains(filename.substring(dot + 1).toLowerCase());
-    }
-
-    private String thumbnailMediaType(String filename) {
         String lower = filename.toLowerCase();
-        if (lower.endsWith(".png"))  return "image/png";
-        if (lower.endsWith(".gif"))  return "image/gif";
-        if (lower.endsWith(".webp")) return "image/webp";
-        return "image/jpeg";
+        return VIDEO_EXTS.stream().anyMatch(ext -> lower.endsWith("." + ext));
     }
 }

@@ -38,21 +38,28 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     // Try to parse error details from JSON response
     let errorType: string | undefined;
     let details: Record<string, any> | undefined;
+    let message: string | undefined;
     try {
       const data = await res.json();
-      errorType = data.error;
+      // Support both 'error' and 'errorType' fields (for auth errors specifically)
+      errorType = data.errorType || data.error;
+      message = data.message;
       details = data;
     } catch {
       // Fall back to text if JSON parsing fails
     }
 
-    const text = await res.text().catch(() => res.statusText);
+    const text = message || (await res.text().catch(() => res.statusText));
     throw new ApiError(
       res.status,
       text || `HTTP ${res.status}`,
       errorType,
       details
     );
+  }
+  // Handle 204 No Content and other empty responses
+  if (res.status === 204 || res.headers.get("content-length") === "0") {
+    return undefined as T;
   }
   return res.json() as Promise<T>;
 }
@@ -91,7 +98,9 @@ export async function fetchTags(prefix?: string): Promise<string[]> {
 export async function uploadImage(file: File): Promise<ImageDto> {
   const form = new FormData();
   form.append("file", file);
-  const res = await fetch(`${BASE}/api/images`, { method: "POST", body: form });
+  const headers: Record<string, string> = {};
+  if (_authToken) headers["Authorization"] = `Bearer ${_authToken}`;
+  const res = await fetch(`${BASE}/api/images`, { method: "POST", body: form, headers });
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText);
     throw new Error(text || `HTTP ${res.status}`);
@@ -100,17 +109,15 @@ export async function uploadImage(file: File): Promise<ImageDto> {
 }
 
 export async function deleteImage(id: number): Promise<void> {
-  const res = await fetch(`${BASE}/api/images/${id}`, { method: "DELETE" });
-  if (!res.ok && res.status !== 404) throw new Error(`HTTP ${res.status}`);
+  await request<void>(`/api/images/${id}`, { method: "DELETE" });
 }
 
 export async function deleteImages(ids: number[]): Promise<void> {
-  const res = await fetch(`${BASE}/api/images`, {
+  await request<void>(`/api/images`, {
     method: "DELETE",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(ids),
   });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
 }
 
 export function thumbnailSrc(id: number): string {
@@ -119,6 +126,24 @@ export function thumbnailSrc(id: number): string {
 
 export function fullSrc(id: number): string {
   return `${BASE}/api/images/${id}/full`;
+}
+
+/**
+ * Fetch the full-resolution image data with authentication.
+ * Returns a blob URL that can be used with <img> tags.
+ * Caller is responsible for calling URL.revokeObjectURL() when done with the blob URL.
+ */
+export async function fetchFullImageBlob(id: number): Promise<string> {
+  const headers: Record<string, string> = {};
+  if (_authToken) {
+    headers["Authorization"] = `Bearer ${_authToken}`;
+  }
+  const res = await fetch(`${BASE}/api/images/${id}/full`, { headers });
+  if (!res.ok) {
+    throw new ApiError(res.status, `Failed to load full image: ${res.statusText}`);
+  }
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
 }
 
 export async function fetchMediaCounts(): Promise<Record<string, number>> {
@@ -143,4 +168,25 @@ export async function fetchSearchResults(params: {
   if (params.favourites) query.set("favourites", "true");
   const qs = query.toString() ? `?${query}` : "";
   return request<ImageGroupDto[]>(`/api/images${qs}`);
+}
+
+export async function registerAccount(email: string, password: string): Promise<{ accessToken: string; email: string }> {
+  return request<{ accessToken: string; email: string }>("/api/auth/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+}
+
+export async function importSeedImages(): Promise<ImageDto[]> {
+  return request<ImageDto[]>("/api/users/me/import-seed-images", { method: "POST" });
+}
+
+/**
+ * Checks if a filename is a video based on its extension
+ */
+export function isVideoFile(filename: string): boolean {
+  const videoExtensions = ['mp4', 'mov', 'avi', 'mkv', 'm4v', 'wmv', 'webm'];
+  const ext = filename.split('.').pop()?.toLowerCase() || '';
+  return videoExtensions.includes(ext);
 }

@@ -12,6 +12,12 @@ services:
       - gallery-data:/app/data
     networks:
       - backend-tier
+    healthcheck:
+      test: ["CMD", "bash", "-c", "curl -s -o /dev/null http://localhost:8080 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 55s
 
   nginx:
     image: nginx:alpine
@@ -20,10 +26,17 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - frontend-tier
       - backend-tier
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
 
   frontend:
     build:
@@ -43,9 +56,36 @@ services:
       - frontend-node-modules:/app/node_modules
       - frontend-next:/app/.next
     depends_on:
-      - nginx
+      nginx:
+        condition: service_healthy
     networks:
       - frontend-tier
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 60s
+
+  # Debug-only: browse the SQLite database via a web UI (coleifer/sqlite-web).
+  # Opt-in via Compose profile — does NOT start with a plain `docker compose up`.
+  # Start with:  docker compose --profile debug up -d sqlite-web
+  # NOTE: only useful when the backend runs the `local` Spring profile (SQLite).
+  # Under `feature` (PostgreSQL) this container has nothing to show — expected, not a bug.
+  sqlite-web:
+    image: coleifer/sqlite-web
+    profiles: ["debug"]
+    ports:
+      - "8085:8080"
+    volumes:
+      - gallery-data:/data
+    # The image's default shell entrypoint expects database path as first positional argument.
+    # Pass it via shell -c to ensure the argument reaches the application correctly.
+    # Bind to 0.0.0.0 (not 127.0.0.1) so the container's port 8080 is accessible to Docker's port mapper.
+    command: sh -c "cd /data && python -m sqlite_web gallery.db -H 0.0.0.0"
+    depends_on:
+      backend:
+        condition: service_healthy
 
 networks:
   frontend-tier:

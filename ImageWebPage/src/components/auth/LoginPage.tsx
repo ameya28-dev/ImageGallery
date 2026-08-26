@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Eye, EyeOff, LogIn } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { ApiError } from "@/lib/api";
 
 export default function LoginPage() {
   const { login, loginWithGoogle } = useAuth();
@@ -13,6 +15,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const googleAuthEnabled = process.env.NEXT_PUBLIC_GOOGLE_AUTH === "true";
 
@@ -24,10 +27,21 @@ export default function LoginPage() {
       await login(email, password);
       router.push("/");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Sign-in failed. Try again.");
+      // Check if it's a user-not-found error
+      if (err instanceof ApiError && err.errorType === "USER_NOT_FOUND") {
+        setError(err.message);
+        setShowCreateModal(true);
+      } else {
+        setError(err instanceof Error ? err.message : "Sign-in failed. Try again.");
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCreateAccount = () => {
+    // Navigate to register page with email pre-filled via query param
+    router.push(`/register?email=${encodeURIComponent(email)}`);
   };
 
   return (
@@ -121,11 +135,43 @@ export default function LoginPage() {
           </>
         )}
 
-        {/* Guest hint */}
+        {/* Guest hint and register link */}
         <p className="text-center text-gray-600 text-xs mt-8">
           Browsing as guest · 5 uploads/day
         </p>
+        <p className="text-center text-gray-400 text-sm mt-4">
+          New here?{" "}
+          <Link href="/register" className="text-blue-400 hover:underline">
+            Create account
+          </Link>
+        </p>
       </div>
+
+      {/* Account Not Found Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+          <div className="bg-neutral-900 rounded-2xl p-6 max-w-sm w-full mx-4 border border-neutral-800">
+            <h2 className="text-xl font-bold text-white mb-2">Account doesn't exist</h2>
+            <p className="text-gray-400 text-sm mb-6">
+              No account found for <span className="text-white font-medium">{email}</span>. Would you like to create one?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-neutral-700 text-white text-sm font-medium hover:bg-white/5 transition-colors"
+              >
+                Try Again
+              </button>
+              <button
+                onClick={handleCreateAccount}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-white text-black text-sm font-medium hover:bg-gray-100 transition-colors"
+              >
+                Create Account
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
