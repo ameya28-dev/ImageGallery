@@ -6,6 +6,13 @@
 #    docs/            Markdown documentation
 # ─────────────────────────────────────────────────────────────────────
 
+# ── Claude Code (.claude/) ──────────────────────────────────────────────
+# Local settings contain machine-specific paths and sensitive data (tokens)
+.claude/settings.local.json
+# Keep shared project settings
+!.claude/settings.json
+!.claude/projects/
+
 # ── Session logs (Claude Code) ───────────────────────────────────────
 *.txt
 
