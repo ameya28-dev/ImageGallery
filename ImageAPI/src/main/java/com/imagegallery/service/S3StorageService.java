@@ -32,6 +32,7 @@ public class S3StorageService implements StorageService {
     private final S3Client s3Client;
     private final GalleryProperties properties;
 
+    private static final String IMAGE_PREFIX = "images/";
     private static final String THUMBNAIL_PREFIX = "thumbnails/";
 
     @Override
@@ -68,7 +69,7 @@ public class S3StorageService implements StorageService {
     public InputStream retrieveImage(String storageKey) {
         return s3Client.getObject(GetObjectRequest.builder()
                 .bucket(properties.getS3().getBucketName())
-                .key(storageKey)
+                .key(IMAGE_PREFIX + storageKey)
                 .build());
     }
 
@@ -84,7 +85,7 @@ public class S3StorageService implements StorageService {
     public Instant getImageLastModified(String storageKey) {
         HeadObjectResponse response = s3Client.headObject(HeadObjectRequest.builder()
                 .bucket(properties.getS3().getBucketName())
-                .key(storageKey)
+                .key(IMAGE_PREFIX + storageKey)
                 .build());
         return response.lastModified();
     }
@@ -102,7 +103,7 @@ public class S3StorageService implements StorageService {
     public void deleteImage(String storageKey, String thumbnailKey) {
         s3Client.deleteObject(DeleteObjectRequest.builder()
                 .bucket(properties.getS3().getBucketName())
-                .key(storageKey)
+                .key(IMAGE_PREFIX + storageKey)
                 .build());
         s3Client.deleteObject(DeleteObjectRequest.builder()
                 .bucket(properties.getS3().getBucketName())
@@ -115,9 +116,9 @@ public class S3StorageService implements StorageService {
         String bucket = properties.getS3().getBucketName();
         s3Client.copyObject(CopyObjectRequest.builder()
                 .sourceBucket(bucket)
-                .sourceKey(sourceKey)
+                .sourceKey(IMAGE_PREFIX + sourceKey)
                 .destinationBucket(bucket)
-                .destinationKey(destKey)
+                .destinationKey(IMAGE_PREFIX + destKey)
                 .build());
     }
 
@@ -126,9 +127,9 @@ public class S3StorageService implements StorageService {
         String bucket = properties.getS3().getBucketName();
         s3Client.copyObject(CopyObjectRequest.builder()
                 .sourceBucket(bucket)
-                .sourceKey(sourceKey)
+                .sourceKey(THUMBNAIL_PREFIX + sourceKey)
                 .destinationBucket(bucket)
-                .destinationKey(destKey)
+                .destinationKey(THUMBNAIL_PREFIX + destKey)
                 .build());
     }
 }

@@ -19,6 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.beans.factory.ObjectProvider;
 
 @Configuration
 @EnableWebSecurity
@@ -27,20 +28,19 @@ public class SecurityConfig {
     private final JwtAuthFilter jwtAuthFilter;
     private final UserDetailsServiceImpl userDetailsService;
     private final GalleryProperties galleryProperties;
+    private final ObjectProvider<ClientRegistrationRepository> clientRegistrationRepositoryProvider;
+    private final ObjectProvider<OAuth2AuthSuccessHandler> oAuth2AuthSuccessHandlerProvider;
 
-    /** Null when no OAuth2 client registrations are configured (local profile). */
-    @Autowired(required = false)
-    private ClientRegistrationRepository clientRegistrationRepository;
-
-    /** Null when no OAuth2 client registrations are configured (local profile). */
-    @Autowired(required = false)
-    private OAuth2AuthSuccessHandler oAuth2AuthSuccessHandler;
-
-    public SecurityConfig(JwtAuthFilter jwtAuthFilter, UserDetailsServiceImpl userDetailsService, GalleryProperties galleryProperties) {
+    public SecurityConfig(JwtAuthFilter jwtAuthFilter, UserDetailsServiceImpl userDetailsService, GalleryProperties galleryProperties,
+                         ObjectProvider<ClientRegistrationRepository> clientRegistrationRepositoryProvider,
+                         ObjectProvider<OAuth2AuthSuccessHandler> oAuth2AuthSuccessHandlerProvider) {
         this.jwtAuthFilter = jwtAuthFilter;
         this.userDetailsService = userDetailsService;
         this.galleryProperties = galleryProperties;
+        this.clientRegistrationRepositoryProvider = clientRegistrationRepositoryProvider;
+        this.oAuth2AuthSuccessHandlerProvider = oAuth2AuthSuccessHandlerProvider;
     }
+
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -89,9 +89,12 @@ public class SecurityConfig {
             );
 
         // Wire Google OAuth2 only if a client registration is configured
-        if (clientRegistrationRepository != null && oAuth2AuthSuccessHandler != null) {
+        var repository = clientRegistrationRepositoryProvider.getIfAvailable();
+        var handler = oAuth2AuthSuccessHandlerProvider.getIfAvailable();
+        if (repository != null && handler != null) {
             http.oauth2Login(oauth2 -> oauth2
-                    .successHandler(oAuth2AuthSuccessHandler)
+                    .successHandler(handler)
+                    .failureUrl("/login?error=oauth2")
             );
         }
 

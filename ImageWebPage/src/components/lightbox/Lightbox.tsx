@@ -4,8 +4,9 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { ArrowLeft, Heart, Info, Trash2, Maximize2, Minimize2 } from "lucide-react";
 import { ImageDto } from "@/types";
-import { fetchFullImageBlob, thumbnailSrc, isVideoFile } from "@/lib/api";
+import { fetchFullImageBlob, isVideoFile } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { AuthedImage } from "@/components/common/AuthedImage";
 import ThumbnailCarousel from "./ThumbnailCarousel";
 import InfoPanel from "./InfoPanel";
 import DeleteDialog from "./DeleteDialog";
@@ -284,11 +285,10 @@ export default function Lightbox({
             onDoubleClick={handleImageDoubleClick}
           >
             {/* Blurred thumbnail shown while full image downloads */}
-            <img
+            <AuthedImage
               key={`blur-${activeImage.id}`}
-              src={thumbnailSrc(activeImage.id)}
+              id={activeImage.id}
               alt=""
-              aria-hidden="true"
               className={`absolute max-w-full max-h-full object-contain blur-xl scale-110 transition-opacity duration-300 pointer-events-none ${
                 loadedBlobUrls.has(activeImage.id) ? "opacity-0" : "opacity-70"
               }`}

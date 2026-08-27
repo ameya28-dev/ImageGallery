@@ -2,7 +2,7 @@
 
 import { useRef, useEffect } from "react";
 import { ImageDto } from "@/types";
-import { thumbnailSrc } from "@/lib/api";
+import { AuthedImage } from "@/components/common/AuthedImage";
 
 interface ThumbnailCarouselProps {
   images: ImageDto[];
@@ -40,8 +40,8 @@ export default function ThumbnailCarousel({ images, activeId, onSelect }: Thumbn
             img.id === activeId ? "ring-2 ring-cyan-400 opacity-100" : "opacity-50"
           }`}
         >
-          <img
-            src={thumbnailSrc(img.id)}
+          <AuthedImage
+            id={img.id}
             alt=""
             className="w-full h-full object-cover"
           />

@@ -5,6 +5,6 @@
 set -e
 
 echo "🛑 Stopping Image Gallery containers (feature profile)..."
-docker compose -f compose.yaml -f compose.feature.override.yaml down
+docker compose --env-file .env.feature -f compose.yaml -f compose.feature.override.yaml down
 
 echo "✅ Containers stopped. RDS/S3 data preserved."

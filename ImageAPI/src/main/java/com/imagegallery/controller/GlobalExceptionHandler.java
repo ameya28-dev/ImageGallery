@@ -81,4 +81,21 @@ public class GlobalExceptionHandler {
                 .status(500)
                 .body(Map.of("error", "Storage error: " + e.getMessage()));
     }
+
+    /**
+     * Catch-all fallback for any uncaught exception.
+     * Prevents exceptions from propagating to Spring's error handler (/error dispatch),
+     * which would otherwise re-enter the security filter chain without authentication
+     * and return a misleading 401 instead of the actual 500 error.
+     */
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, String>> handleUncaughtException(Exception e) {
+        log.error("Uncaught exception:", e);
+        return ResponseEntity
+                .status(500)
+                .body(Map.of(
+                    "error", "Internal server error",
+                    "message", e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()
+                ));
+    }
 }

@@ -11,7 +11,16 @@ echo "   Frontend: http://localhost:3000"
 echo "   API: http://localhost:8000"
 echo ""
 
-docker compose up --build
+docker compose up -d --build
 
+echo "✅ Services starting in background..."
 echo ""
-echo "✅ Local profile is running!"
+echo "📖 View logs:   ./scripts/local/logs.sh"
+echo "📊 Status:      ./scripts/local/status.sh"
+echo "🛑 Stop:        ./scripts/local/down.sh"
+echo ""
+echo "🚀 Once healthy, access at:"
+echo "   Frontend:   http://localhost:3000"
+echo "   API:        http://localhost:8000"
+echo "   Swagger:    http://localhost:8000/swagger-ui.html"
+echo "   SQLite CLI: sqlite3 data/gallery.db (in backend container: docker exec imagegallery-backend-1 sqlite3 /app/data/gallery.db)"

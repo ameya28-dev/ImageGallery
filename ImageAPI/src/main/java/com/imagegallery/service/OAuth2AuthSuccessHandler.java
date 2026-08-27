@@ -4,10 +4,8 @@ import com.imagegallery.model.User;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
-import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
@@ -18,11 +16,13 @@ import java.util.Map;
 
 /**
  * Handles the post-OAuth2 redirect after Google authenticates the user.
- * Active only when a Google client registration is configured
- * (feature profile).
+ * This bean is always created, but only used when OAuth2 is configured
+ * (feature profile). The SecurityConfig conditionally wires it into
+ * the filter chain only if a ClientRegistrationRepository is present.
+ * (Note: @ConditionalOnBean is removed to avoid bean initialization
+ * order issues — null-checking in SecurityConfig is sufficient.)
  */
 @Component
-@ConditionalOnBean(ClientRegistrationRepository.class)
 public class OAuth2AuthSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final AuthService authService;

@@ -17,8 +17,6 @@ services:
       GALLERY_ADMIN_EMAIL: ${GALLERY_ADMIN_EMAIL}
       GALLERY_ADMIN_PASSWORD: ${GALLERY_ADMIN_PASSWORD}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-    env_file:
-      - .env.feature
 
   frontend:
     environment:
@@ -29,5 +27,3 @@ services:
       NEXT_PUBLIC_GUEST_MODE: "false"
       NEXT_PUBLIC_SEED_IMPORT_ENABLED: "false"
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-    env_file:
-      - .env.feature

@@ -15,7 +15,7 @@ fi
 
 echo ""
 echo "🗑️  Removing containers and local volumes..."
-docker compose -f compose.yaml -f compose.feature.override.yaml down -v
+docker compose --env-file .env.feature -f compose.yaml -f compose.feature.override.yaml down -v
 
 echo "Pruning unused Docker images and networks..."
 docker image prune -f

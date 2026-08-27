@@ -98,13 +98,45 @@ export async function fetchTags(prefix?: string): Promise<string[]> {
 export async function uploadImage(file: File): Promise<ImageDto> {
   const form = new FormData();
   form.append("file", file);
+
+  // Build headers with auth token if available
   const headers: Record<string, string> = {};
-  if (_authToken) headers["Authorization"] = `Bearer ${_authToken}`;
-  const res = await fetch(`${BASE}/api/images`, { method: "POST", body: form, headers });
-  if (!res.ok) {
-    const text = await res.text().catch(() => res.statusText);
-    throw new Error(text || `HTTP ${res.status}`);
+  if (_authToken) {
+    headers["Authorization"] = `Bearer ${_authToken}`;
   }
+
+  // Note: Don't set Content-Type manually when using FormData —
+  // the browser will set it to multipart/form-data with the correct boundary.
+  const res = await fetch(`${BASE}/api/images`, {
+    method: "POST",
+    body: form,
+    headers,
+    credentials: "include", // Include cookies (refresh token, session, etc.)
+  });
+
+  if (!res.ok) {
+    // Try to parse error details from JSON response (matching the request helper)
+    let errorType: string | undefined;
+    let details: Record<string, any> | undefined;
+    let message: string | undefined;
+    try {
+      const data = await res.json();
+      errorType = data.errorType || data.error;
+      message = data.message;
+      details = data;
+    } catch {
+      // Fall back to text if JSON parsing fails
+    }
+
+    const text = message || (await res.text().catch(() => res.statusText));
+    throw new ApiError(
+      res.status,
+      text || `HTTP ${res.status}`,
+      errorType,
+      details
+    );
+  }
+
   return res.json() as Promise<ImageDto>;
 }
 
@@ -135,12 +167,57 @@ export function fullSrc(id: number): string {
  */
 export async function fetchFullImageBlob(id: number): Promise<string> {
   const headers: Record<string, string> = {};
+  const hasToken = !!_authToken;
   if (_authToken) {
     headers["Authorization"] = `Bearer ${_authToken}`;
   }
-  const res = await fetch(`${BASE}/api/images/${id}/full`, { headers });
+
+  console.log(`[fetchFullImageBlob] Fetching id=${id}, token=${hasToken ? 'set' : 'NOT SET'}, url=${BASE}/api/images/${id}/full`);
+
+  try {
+    const res = await fetch(`${BASE}/api/images/${id}/full`, {
+      headers,
+      // Explicitly include credentials for same-origin requests
+      credentials: "include",
+    });
+
+    console.log(`[fetchFullImageBlob] Response: ${res.status} ${res.statusText}`);
+
+    if (!res.ok) {
+      let errorMsg = `HTTP ${res.status}`;
+      try {
+        const data = await res.json();
+        errorMsg = data.message || data.error || errorMsg;
+      } catch {
+        // fallback to status text if JSON parsing fails
+        errorMsg = res.statusText || errorMsg;
+      }
+      throw new ApiError(res.status, `Failed to load full image: ${errorMsg}`);
+    }
+    const blob = await res.blob();
+    console.log(`[fetchFullImageBlob] Success: loaded ${blob.size} bytes`);
+    return URL.createObjectURL(blob);
+  } catch (e) {
+    console.error(`[fetchFullImageBlob] Error:`, e);
+    if (e instanceof ApiError) throw e;
+    // Network error or other fetch failure
+    throw new ApiError(0, `Failed to fetch full image: ${e instanceof Error ? e.message : String(e)}`);
+  }
+}
+
+/**
+ * Fetch the thumbnail image data with authentication.
+ * Returns a blob URL that can be used with <img> tags.
+ * Caller is responsible for calling URL.revokeObjectURL() when done with the blob URL.
+ */
+export async function fetchThumbnailBlob(id: number): Promise<string> {
+  const headers: Record<string, string> = {};
+  if (_authToken) {
+    headers["Authorization"] = `Bearer ${_authToken}`;
+  }
+  const res = await fetch(`${BASE}/api/images/${id}/thumbnail`, { headers });
   if (!res.ok) {
-    throw new ApiError(res.status, `Failed to load full image: ${res.statusText}`);
+    throw new ApiError(res.status, `Failed to load thumbnail: ${res.statusText}`);
   }
   const blob = await res.blob();
   return URL.createObjectURL(blob);

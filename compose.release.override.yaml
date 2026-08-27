@@ -1,0 +1,28 @@
+# Override for release/performance testing mode
+# Use this to test ACTUAL performance (without debug overhead)
+#
+# LOCAL:   docker compose -f compose.yaml -f compose.release.override.yaml up --build
+# FEATURE: docker compose --env-file .env.feature -f compose.yaml -f compose.feature.override.yaml -f compose.release.override.yaml up --build
+#
+# Changes in release mode:
+#   ✅ JDWP Java debugging (port 5005) disabled — removes ~5% overhead
+#   ✅ Node.js inspect (port 9229) disabled — removes ~2-5% overhead
+#   ✅ Swagger docs (/swagger-ui, /v3/api-docs) disabled
+#   ✅ Management endpoints hidden
+#   ✅ Production-like performance
+#
+services:
+  backend:
+    environment:
+      # Disable JDWP — removes Java debugger overhead
+      JAVA_TOOL_OPTIONS: ""
+      # Add "release" profile to disable Swagger + dev endpoints
+      # Note: For feature profile, the script overrides this with -e flag
+      SPRING_PROFILES_ACTIVE: "local,release"
+
+  frontend:
+    environment:
+      # Disable Node.js inspect — removes inspector overhead
+      NODE_OPTIONS: ""
+    # Note: ports section from compose.override.yaml is inherited
+    # In release mode, 9229 is still mapped but inspect is disabled

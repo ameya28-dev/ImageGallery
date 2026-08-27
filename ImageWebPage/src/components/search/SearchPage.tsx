@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { ArrowLeft, Search, Play, Hash, ChevronRight, Heart, Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ImageDto, TagCountDto } from "@/types";
-import { fetchMediaCounts, fetchTagsRanked, fetchTags, fetchSearchResults, thumbnailSrc } from "@/lib/api";
+import { fetchMediaCounts, fetchTagsRanked, fetchTags, fetchSearchResults } from "@/lib/api";
+import { AuthedImage } from "@/components/common/AuthedImage";
 
 export default function SearchPage() {
   const router = useRouter();
@@ -166,7 +167,7 @@ export default function SearchPage() {
             >
               {favouriteImages.slice(0, 14).map((img, i) => (
                 <div key={img.id} className={`img-cell${i >= 8 ? " hidden sm:block" : ""}`}>
-                  <img src={thumbnailSrc(img.id)} alt={img.filename} loading="lazy" />
+                  <AuthedImage id={img.id} alt={img.filename} loading="lazy" />
                 </div>
               ))}
             </div>

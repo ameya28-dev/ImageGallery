@@ -3,7 +3,7 @@
 # Usage: ./scripts/feature/status.sh
 
 echo "📊 Container Status (feature profile):"
-docker compose -f compose.yaml -f compose.feature.override.yaml ps
+docker compose --env-file .env.feature -f compose.yaml -f compose.feature.override.yaml ps
 
 echo ""
 echo "🔗 Service URLs:"

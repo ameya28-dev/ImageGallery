@@ -68,12 +68,12 @@ export default function TagAutocomplete({
       />
       {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
       {open && suggestions.length > 0 && (
-        <ul className="absolute z-10 left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-40 overflow-auto">
+        <ul className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto min-w-full">
           {suggestions.map((s) => (
             <li
               key={s}
               onMouseDown={() => submit(s)}
-              className="px-3 py-2 text-sm cursor-pointer hover:bg-blue-50"
+              className="px-3 py-2 text-sm cursor-pointer hover:bg-blue-50 truncate whitespace-nowrap"
             >
               {s}
             </li>

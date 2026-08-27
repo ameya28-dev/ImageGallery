@@ -67,9 +67,9 @@ export default function GalleryPage() {
     const {add: addTag, remove: removeTag, suggestions, loadSuggestions} = useTags(setGroups);
 
     // Guests cannot toggle favourites — no-op prevents an unauthenticated 401
-    const toggleFavourite = useCallback((id: number) => {
+    const toggleFavourite = useCallback(async (id: number): Promise<void> => {
         if (!isOwner) return;
-        toggleFavouriteRaw(id);
+        await toggleFavouriteRaw(id);
     }, [isOwner, toggleFavouriteRaw]);
 
     const [selectionMode, setSelectionMode] = useState(false);

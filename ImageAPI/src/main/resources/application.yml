@@ -128,5 +128,47 @@ spring:
           google:
             client-id: ${GOOGLE_CLIENT_ID}
             client-secret: ${GOOGLE_CLIENT_SECRET}
-            scope: email, profile
+            client-authentication-method: client_secret_basic
+            authorization-grant-type: authorization_code
+            scope: openid, email, profile
             redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            provider: google
+        provider:
+          google:
+            authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
+            token-uri: https://www.googleapis.com/oauth2/v4/token
+            user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
+            user-name-attribute: sub
+
+---
+# ----------------------------------------------------
+# RELEASE PROFILE — Disables development-only endpoints
+# Activate alongside local/feature profiles:
+#   - local,release for local profile without dev endpoints
+#   - feature,google-auth,release for feature profile without dev endpoints
+# Run: mvn spring-boot:run -Dspring-boot.run.profiles=local,release
+# Docker: set SPRING_PROFILES_ACTIVE=local,release in compose override
+# Removes:
+#   - Swagger UI (/swagger-ui/**, /v3/api-docs/**)
+#   - Admin endpoints
+#   - Health details
+# Use for: Performance testing, staging, production deployments
+# ----------------------------------------------------
+spring:
+  config:
+    activate:
+      on-profile: release
+
+# Disable Swagger docs entirely in release mode
+springdoc:
+  swagger-ui:
+    enabled: false
+  api-docs:
+    enabled: false
+
+# Hide detailed health info
+management:
+  endpoints:
+    web:
+      exposure:
+        include: ""

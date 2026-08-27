@@ -2,7 +2,7 @@
 
 import { Heart, Hash } from "lucide-react";
 import { ImageDto } from "@/types";
-import { thumbnailSrc } from "@/lib/api";
+import { AuthedImage } from "@/components/common/AuthedImage";
 
 interface ImageCardProps {
   image: ImageDto;
@@ -21,7 +21,7 @@ export default function ImageCard({
 }: ImageCardProps) {
   return (
     <div className="img-cell" onClick={() => onPress(image)}>
-      <img src={thumbnailSrc(image.id)} alt={image.filename} loading="lazy" />
+      <AuthedImage id={image.id} alt={image.filename} loading="lazy" />
 
       {/* Heart toggle — top-right, 10 px padding, always visible */}
       {!selectionMode && (

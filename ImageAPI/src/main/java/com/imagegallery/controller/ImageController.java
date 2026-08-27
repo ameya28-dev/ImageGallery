@@ -107,22 +107,18 @@ public class ImageController {
     }
 
     @GetMapping("/{id}/full")
-    public ResponseEntity<StreamingResponseBody> getFullImage(@PathVariable Long id) {
+    public ResponseEntity<byte[]> getFullImage(@PathVariable Long id) throws IOException {
         Long ownerId = resolveOwnerId();
         try {
             ImageService.StreamResult result = imageService.getFullImageStream(ownerId, id);
+            byte[] bytes = result.stream().readAllBytes();
             String eTag = "\"" + result.lastModified().toEpochMilli() + "\"";
-            StreamingResponseBody body = out -> {
-                try (InputStream in = result.stream()) {
-                    in.transferTo(out);
-                }
-            };
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType(contentTypeFor(result.filename())))
                     .cacheControl(IMAGE_CACHE)
                     .eTag(eTag)
                     .lastModified(result.lastModified())
-                    .body(body);
+                    .body(bytes);
         } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();
         }
