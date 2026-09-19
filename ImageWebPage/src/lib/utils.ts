@@ -30,9 +30,13 @@ export function isAlphanumeric(value: string): boolean {
 export function contentTypeFromFilename(filename: string): string {
   const ext = filename.split(".").pop()?.toLowerCase();
   switch (ext) {
-    case "png":  return "image/png";
-    case "gif":  return "image/gif";
-    case "webp": return "image/webp";
-    default:     return "image/jpeg";
+    case "png":
+      return "image/png";
+    case "gif":
+      return "image/gif";
+    case "webp":
+      return "image/webp";
+    default:
+      return "image/jpeg";
   }
 }

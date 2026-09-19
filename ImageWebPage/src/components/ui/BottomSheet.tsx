@@ -20,7 +20,12 @@ interface BottomSheetProps {
  * - Default (no container): renders at z-[60] over the entire viewport.
  * - With container: overlays only the container element (used for the desktop info sidebar).
  */
-export default function BottomSheet({ open, onClose, children, container }: BottomSheetProps) {
+export default function BottomSheet({
+  open,
+  onClose,
+  children,
+  container,
+}: BottomSheetProps) {
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
@@ -42,7 +47,7 @@ export default function BottomSheet({ open, onClose, children, container }: Bott
   return createPortal(
     <div className={`${posClass} inset-0 z-[60] flex items-end`}>
       <div className={`${posClass} inset-0 bg-black/60`} onClick={onClose} />
-      <div className="relative w-full bg-surface-2 rounded-t-3xl max-h-[85%] overflow-y-auto">
+      <div className="relative max-h-[85%] w-full overflow-y-auto rounded-t-3xl bg-surface-2">
         {children}
       </div>
     </div>,

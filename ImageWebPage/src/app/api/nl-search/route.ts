@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic();
-const BACKEND = process.env.BACKEND_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+const BACKEND =
+  process.env.BACKEND_URL ??
+  process.env.NEXT_PUBLIC_API_URL ??
+  "http://localhost:8080";
 
 export async function POST(req: NextRequest) {
   const { query } = await req.json();
@@ -13,7 +16,9 @@ export async function POST(req: NextRequest) {
   // Fetch available tags from Spring Boot
   let availableTags: string[] = [];
   try {
-    const tagsRes = await fetch(`${BACKEND}/api/tags/ranked`, { cache: "no-store" });
+    const tagsRes = await fetch(`${BACKEND}/api/tags/ranked`, {
+      cache: "no-store",
+    });
     if (tagsRes.ok) {
       const ranked: { name: string }[] = await tagsRes.json();
       availableTags = ranked.map((t) => t.name);
@@ -25,7 +30,9 @@ export async function POST(req: NextRequest) {
   // Fetch available media types
   let availableTypes: string[] = [];
   try {
-    const countsRes = await fetch(`${BACKEND}/api/images/counts`, { cache: "no-store" });
+    const countsRes = await fetch(`${BACKEND}/api/images/counts`, {
+      cache: "no-store",
+    });
     if (countsRes.ok) {
       const counts: Record<string, number> = await countsRes.json();
       availableTypes = Object.keys(counts);
@@ -62,10 +69,15 @@ Rules:
     });
 
     const text =
-      message.content[0].type === "text" ? message.content[0].text.trim() : "{}";
+      message.content[0].type === "text"
+        ? message.content[0].text.trim()
+        : "{}";
 
     // Strip markdown code fences if the model wraps the JSON
-    const clean = text.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
+    const clean = text
+      .replace(/^```(?:json)?\n?/, "")
+      .replace(/\n?```$/, "")
+      .trim();
     const result = JSON.parse(clean);
 
     return NextResponse.json({

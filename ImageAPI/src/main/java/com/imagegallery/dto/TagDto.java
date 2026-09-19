@@ -11,7 +11,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class TagDto {
 
-    @NotBlank(message = "Tag name must not be blank")
-    @Pattern(regexp = "^[a-zA-Z0-9]+$", message = "Tag name must be alphanumeric")
-    private String tag;
+  @NotBlank(message = "Tag name must not be blank")
+  @Pattern(regexp = "^[a-zA-Z0-9]+$", message = "Tag name must be alphanumeric")
+  private String tag;
 }

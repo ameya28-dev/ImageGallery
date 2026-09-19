@@ -11,34 +11,34 @@ import org.springframework.context.annotation.Configuration;
 @Setter
 public class GalleryProperties {
 
-    private Storage storage = new Storage();
-    private S3 s3 = new S3();
-    private String imagesPath;
-    private String thumbnailsPath;
-    private String frontendUrl = "http://localhost:3000";  // OAuth2 redirect & CORS origin
-    private Thumbnail thumbnail = new Thumbnail();
-    private boolean guestAccessEnabled = true;
-    private boolean seedImportEnabled = true;
+  private Storage storage = new Storage();
+  private S3 s3 = new S3();
+  private String imagesPath;
+  private String thumbnailsPath;
+  private String frontendUrl = "http://localhost:3000"; // OAuth2 redirect & CORS origin
+  private Thumbnail thumbnail = new Thumbnail();
+  private boolean guestAccessEnabled = true;
+  private boolean seedImportEnabled = true;
 
-    @Getter
-    @Setter
-    public static class Storage {
-        private String type;
-    }
+  @Getter
+  @Setter
+  public static class Storage {
+    private String type;
+  }
 
-    @Getter
-    @Setter
-    public static class S3 {
-        private String bucketName;
-        private String region;
-        private String accessKey;
-        private String secretKey;
-    }
+  @Getter
+  @Setter
+  public static class S3 {
+    private String bucketName;
+    private String region;
+    private String accessKey;
+    private String secretKey;
+  }
 
-    @Getter
-    @Setter
-    public static class Thumbnail {
-        private int width = 400;
-        private int height = 400;
-    }
+  @Getter
+  @Setter
+  public static class Thumbnail {
+    private int width = 400;
+    private int height = 400;
+  }
 }

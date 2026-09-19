@@ -51,7 +51,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         scheduleRefresh();
         return true;
       }
-    } catch { /* network error → stay as guest */ }
+    } catch {
+      /* network error → stay as guest */
+    }
     return false;
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -83,7 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         res.status,
         err.message ?? err.error ?? "Sign-in failed",
         err.errorType,
-        err
+        err,
       );
     }
     const data: { accessToken: string; email: string } = await res.json();
@@ -103,7 +105,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         method: "POST",
         credentials: "include",
       });
-    } catch { /* ignore network errors on logout */ }
+    } catch {
+      /* ignore network errors on logout */
+    }
     setAccessToken(null);
     setApiToken(null);
     setUser(null);

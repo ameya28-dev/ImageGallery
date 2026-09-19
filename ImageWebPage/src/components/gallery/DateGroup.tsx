@@ -20,18 +20,21 @@ export default function DateGroup({
   onToggleFavourite,
 }: DateGroupProps) {
   const allSelected =
-    group.images.length > 0 && group.images.every((img) => selectedIds.has(img.id));
+    group.images.length > 0 &&
+    group.images.every((img) => selectedIds.has(img.id));
 
   return (
     <section>
       <div className="flex items-center justify-between px-3 py-2">
-        <h2 className="text-lg font-semibold text-white">{groupDateLabel(group.date)}</h2>
+        <h2 className="text-lg font-semibold text-white">
+          {groupDateLabel(group.date)}
+        </h2>
         {selectionMode && (
           <button
             onClick={() => onSelectGroup(group)}
             aria-label={allSelected ? "Deselect group" : "Select group"}
-            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
-              allSelected ? "bg-cyan-400 border-cyan-400" : "border-gray-400"
+            className={`flex h-5 w-5 items-center justify-center rounded-full border-2 transition-colors ${
+              allSelected ? "border-cyan-400 bg-cyan-400" : "border-gray-400"
             }`}
           >
             {allSelected && (

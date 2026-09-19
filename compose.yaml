@@ -47,7 +47,7 @@ services:
     environment:
       # From browser: call nginx on host port 8000
       # (API paths already include /api/ prefix)
-      NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
       # From SSR: call nginx via backend-tier network (if SSR calls backend)
       BACKEND_URL: http://nginx:8000
       # Local profile: guest mode enabled, seed import available

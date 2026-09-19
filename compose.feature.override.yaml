@@ -20,7 +20,7 @@ services:
 
   frontend:
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
       BACKEND_URL: http://nginx:8000
       NEXT_PUBLIC_GOOGLE_AUTH: "true"
       # Feature profile: guest mode disabled, landing page required, no seed import

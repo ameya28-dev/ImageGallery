@@ -2,7 +2,14 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { ArrowLeft, Heart, Info, Trash2, Maximize2, Minimize2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Heart,
+  Info,
+  Trash2,
+  Maximize2,
+  Minimize2,
+} from "lucide-react";
 import { ImageDto } from "@/types";
 import { fetchFullImageBlob, isVideoFile } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -38,7 +45,9 @@ export default function Lightbox({
 }: LightboxProps) {
   const { isOwner } = useAuth();
   const [activeId, setActiveId] = useState<number | null>(null);
-  const [loadedBlobUrls, setLoadedBlobUrls] = useState<Map<number, string>>(new Map());
+  const [loadedBlobUrls, setLoadedBlobUrls] = useState<Map<number, string>>(
+    new Map(),
+  );
   const [showInfo, setShowInfo] = useState(false);
   const [showTagDialog, setShowTagDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -110,7 +119,9 @@ export default function Lightbox({
               return next;
             });
           })
-          .catch((err) => console.error(`Failed to load image ${image.id}:`, err));
+          .catch((err) =>
+            console.error(`Failed to load image ${image.id}:`, err),
+          );
       }
     }
   }, [image?.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -151,9 +162,11 @@ export default function Lightbox({
     setShowDeleteDialog(false);
     const idx = allImages.findIndex((img) => img.id === activeImage.id);
     const neighborId =
-      idx > 0 ? allImages[idx - 1].id
-      : idx < allImages.length - 1 ? allImages[idx + 1].id
-      : null;
+      idx > 0
+        ? allImages[idx - 1].id
+        : idx < allImages.length - 1
+          ? allImages[idx + 1].id
+          : null;
     if (neighborId !== null) setActiveId(neighborId);
     await onDelete(activeImage.id);
     if (neighborId === null) onClose();
@@ -171,7 +184,9 @@ export default function Lightbox({
   useEffect(() => {
     if (!isOpen) return;
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [isOpen]);
 
   useEffect(() => {
@@ -188,13 +203,24 @@ export default function Lightbox({
           setIsFullscreen(false);
           return;
         }
-        if (showInfo) { setShowInfo(false); setShowTagDialog(false); return; }
+        if (showInfo) {
+          setShowInfo(false);
+          setShowTagDialog(false);
+          return;
+        }
         onClose();
       }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [isOpen, navigate, showTagDialog, showDeleteDialog, isFullscreen, onClose]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [
+    isOpen,
+    navigate,
+    showTagDialog,
+    showDeleteDialog,
+    isFullscreen,
+    onClose,
+  ]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Preload the prev/next full images so navigation feels instant
   useEffect(() => {
@@ -222,7 +248,9 @@ export default function Lightbox({
               return updated;
             });
           })
-          .catch((err) => console.error(`Failed to preload image ${img.id}:`, err));
+          .catch((err) =>
+            console.error(`Failed to preload image ${img.id}:`, err),
+          );
 
         // Return current state unchanged; fetch happens asynchronously
         return currentLoaded;
@@ -233,17 +261,19 @@ export default function Lightbox({
   if (!isOpen || typeof window === "undefined") return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 bg-black flex flex-col">
+    <div className="fixed inset-0 z-50 flex flex-col bg-black">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-4 py-3 flex-none">
+      <div className="flex flex-none items-center justify-between px-4 py-3">
         <button onClick={onClose} aria-label="Back">
           <ArrowLeft size={24} />
         </button>
-        <p className="text-sm text-gray-300 truncate mx-3 flex-1 text-center">
+        <p className="mx-3 flex-1 truncate text-center text-sm text-gray-300">
           {activeImage.filename}
         </p>
         {/* Action icons — invisible (space reserved) when info panel is open */}
-        <div className={`flex items-center gap-4 transition-opacity ${showInfo ? "invisible opacity-0" : ""}`}>
+        <div
+          className={`flex items-center gap-4 transition-opacity ${showInfo ? "invisible opacity-0" : ""}`}
+        >
           <button
             onClick={() => onToggleFavourite(activeImage.id)}
             aria-label="Toggle favourite"
@@ -257,7 +287,10 @@ export default function Lightbox({
           <button onClick={() => setShowInfo(true)} aria-label="Info">
             <Info size={22} />
           </button>
-          <button onClick={toggleFullscreen} aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}>
+          <button
+            onClick={toggleFullscreen}
+            aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+          >
             {isFullscreen ? <Minimize2 size={22} /> : <Maximize2 size={22} />}
           </button>
           <button onClick={handleDeleteClick} aria-label="Delete">
@@ -268,20 +301,20 @@ export default function Lightbox({
 
       {/* Main content — flex-col on mobile, flex-row on sm+ when info open */}
       <div
-        className={`flex-1 flex min-h-0 overflow-hidden ${
+        className={`flex min-h-0 flex-1 overflow-hidden ${
           showInfo ? "flex-col sm:flex-row" : "flex-col"
         }`}
       >
         {/* Image + carousel column */}
         <div
-          className={`flex flex-col min-h-0 overflow-hidden ${
+          className={`flex min-h-0 flex-col overflow-hidden ${
             showInfo ? "h-1/2 sm:h-auto sm:flex-1" : "flex-1"
           }`}
         >
           {/* Image area — double-click toggles fullscreen */}
           <div
             ref={imageAreaRef}
-            className="flex-1 min-h-0 flex items-center justify-center overflow-hidden relative"
+            className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden"
             onDoubleClick={handleImageDoubleClick}
           >
             {/* Blurred thumbnail shown while full image downloads */}
@@ -289,41 +322,42 @@ export default function Lightbox({
               key={`blur-${activeImage.id}`}
               id={activeImage.id}
               alt=""
-              className={`absolute max-w-full max-h-full object-contain blur-xl scale-110 transition-opacity duration-300 pointer-events-none ${
+              className={`pointer-events-none absolute max-h-full max-w-full scale-110 object-contain blur-xl transition-opacity duration-300 ${
                 loadedBlobUrls.has(activeImage.id) ? "opacity-0" : "opacity-70"
               }`}
             />
 
             {/* Full-resolution image or video — fades in once decoded */}
-            {loadedBlobUrls.has(activeImage.id) && (
-              isVideoFile(activeImage.filename) ? (
+            {loadedBlobUrls.has(activeImage.id) &&
+              (isVideoFile(activeImage.filename) ? (
                 <video
                   key={activeImage.id}
                   src={loadedBlobUrls.get(activeImage.id)}
                   controls
                   autoPlay
-                  className="max-w-full max-h-full object-contain transition-opacity duration-300 opacity-100"
+                  className="max-h-full max-w-full object-contain opacity-100 transition-opacity duration-300"
                 />
               ) : (
                 <img
                   key={activeImage.id}
                   src={loadedBlobUrls.get(activeImage.id)}
                   alt={activeImage.filename}
-                  className="max-w-full max-h-full object-contain transition-opacity duration-300 opacity-100"
+                  className="max-h-full max-w-full object-contain opacity-100 transition-opacity duration-300"
                 />
-              )
-            )}
+              ))}
 
             {/* Spinner while full image is in-flight */}
             {!loadedBlobUrls.has(activeImage.id) && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="w-9 h-9 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <div className="h-9 w-9 animate-spin rounded-full border-2 border-white/20 border-t-white" />
               </div>
             )}
           </div>
 
           {/* Thumbnail strip — hidden on mobile when info panel is open */}
-          <div className={`flex-none pt-2 ${showInfo ? "hidden sm:block" : ""}`}>
+          <div
+            className={`flex-none pt-2 ${showInfo ? "hidden sm:block" : ""}`}
+          >
             <ThumbnailCarousel
               images={allImages}
               activeId={activeImage.id}
@@ -336,11 +370,14 @@ export default function Lightbox({
         {showInfo && (
           <div
             ref={infoPanelRef}
-            className="flex-1 sm:flex-none sm:w-80 overflow-y-auto bg-neutral-950 border-t border-neutral-800 sm:border-t-0 sm:border-l sm:border-neutral-800 relative"
+            className="relative flex-1 overflow-y-auto border-t border-neutral-800 bg-neutral-950 sm:w-80 sm:flex-none sm:border-l sm:border-t-0 sm:border-neutral-800"
           >
             <InfoPanel
               image={activeImage}
-              onClose={() => { setShowInfo(false); setShowTagDialog(false); }}
+              onClose={() => {
+                setShowInfo(false);
+                setShowTagDialog(false);
+              }}
               onOpenTagDialog={() => setShowTagDialog(true)}
             />
           </div>

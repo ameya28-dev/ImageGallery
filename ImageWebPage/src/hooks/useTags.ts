@@ -9,14 +9,18 @@ type SetGroups = React.Dispatch<React.SetStateAction<ImageGroupDto[]>>;
 export function useTags(setGroups: SetGroups) {
   const [suggestions, setSuggestions] = useState<string[]>([]);
 
-  const updateGroupsFromTag = (imageId: number, newTags: string[], setter: SetGroups) => {
+  const updateGroupsFromTag = (
+    imageId: number,
+    newTags: string[],
+    setter: SetGroups,
+  ) => {
     setter((prev) =>
       prev.map((group) => ({
         ...group,
         images: group.images.map((img) =>
-          img.id === imageId ? { ...img, tags: newTags } : img
+          img.id === imageId ? { ...img, tags: newTags } : img,
         ),
-      }))
+      })),
     );
   };
 

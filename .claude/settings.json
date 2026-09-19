@@ -11,7 +11,21 @@
       "Bash(rm -f /home/ameya/projects/agentic/ImageGallery/2026-05-18-205248-*.txt)",
       "Bash(rm -f /home/ameya/projects/agentic/ImageGallery/ImageWebPage/2026-05-18-*.txt)",
       "Bash(grep -v \"^\\\\\\\\.$\\\\\\\\|^\\\\\\\\.\\\\\\\\.\\\\\\\\$\")",
-      "Bash(grep -v \"^\\\\.$\\\\|^\\\\.\\\\.$\")"
+      "Bash(grep -v \"^\\\\.$\\\\|^\\\\.\\\\.$\")",
+      "Bash(./scripts/local/up.sh)",
+      "Bash(awk '{print $1}')",
+      "Bash(ip addr *)",
+      "Bash(awk '{print $2}')",
+      "Bash(ip route *)",
+      "Bash(npm install *)",
+      "Bash(jobs -l)",
+      "Read(//usr/lib/**)",
+      "Bash(apt-cache policy *)",
+      "Read(//etc/apt/**)",
+      "Bash(pacman -Ss jdk-openjdk)",
+      "Bash(pacman -Ss \"^jdk\")",
+      "Bash(pacman -Ss \"^maven$\")",
+      "Bash(sudo -n true)"
     ]
   }
 }

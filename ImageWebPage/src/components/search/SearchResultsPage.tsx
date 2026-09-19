@@ -29,7 +29,12 @@ export default function SearchResultsPage() {
   const [highlightedTagIndex, setHighlightedTagIndex] = useState(-1);
 
   const { toggle: toggleFavourite } = useFavourite(setGroups);
-  const { add: addTag, remove: removeTag, suggestions: tagSuggestions, loadSuggestions } = useTags(setGroups);
+  const {
+    add: addTag,
+    remove: removeTag,
+    suggestions: tagSuggestions,
+    loadSuggestions,
+  } = useTags(setGroups);
 
   useEffect(() => {
     setLoading(true);
@@ -44,7 +49,10 @@ export default function SearchResultsPage() {
       .catch((err) => {
         // Handle API errors with granular messages
         if (err instanceof ApiError) {
-          const message = formatErrorMessage(err.errorType, err.details?.message || err.message);
+          const message = formatErrorMessage(
+            err.errorType,
+            err.details?.message || err.message,
+          );
           setError(message);
         } else if (err instanceof Error) {
           setError(err.message || "Search failed. Please try again.");
@@ -67,7 +75,11 @@ export default function SearchResultsPage() {
     const result: string[] = [];
     for (const img of allImages) {
       for (const t of img.tags) {
-        if (!seen.has(t) && !activeTagSet.has(t) && t.toLowerCase().includes(prefix)) {
+        if (
+          !seen.has(t) &&
+          !activeTagSet.has(t) &&
+          t.toLowerCase().includes(prefix)
+        ) {
           seen.add(t);
           result.push(t);
         }
@@ -76,19 +88,30 @@ export default function SearchResultsPage() {
     return result;
   }, [tagInput, allImages, tags]);
 
-  const updateUrl = useCallback((newTags: string[], newType: string | null, newFavourites: boolean) => {
-    const p = new URLSearchParams();
-    // Preserve visual search query when adding/removing tag/type/favourites chips
-    if (q) p.set("q", q);
-    newTags.forEach((t) => p.append("tag", t));
-    if (newType) p.set("type", newType);
-    if (newFavourites) p.set("favourites", "true");
-    const qs = p.toString();
-    if (!qs) { router.back(); return; }
-    router.replace(`/search/results?${qs}`);
-  }, [router, q]);
+  const updateUrl = useCallback(
+    (newTags: string[], newType: string | null, newFavourites: boolean) => {
+      const p = new URLSearchParams();
+      // Preserve visual search query when adding/removing tag/type/favourites chips
+      if (q) p.set("q", q);
+      newTags.forEach((t) => p.append("tag", t));
+      if (newType) p.set("type", newType);
+      if (newFavourites) p.set("favourites", "true");
+      const qs = p.toString();
+      if (!qs) {
+        router.back();
+        return;
+      }
+      router.replace(`/search/results?${qs}`);
+    },
+    [router, q],
+  );
 
-  const removeTagFilter = (t: string) => updateUrl(tags.filter((x) => x !== t), type, favourites);
+  const removeTagFilter = (t: string) =>
+    updateUrl(
+      tags.filter((x) => x !== t),
+      type,
+      favourites,
+    );
   const removeTypeFilter = () => updateUrl(tags, null, favourites);
   const removeFavouritesFilter = () => updateUrl(tags, type, false);
 
@@ -107,11 +130,15 @@ export default function SearchResultsPage() {
     switch (e.key) {
       case "ArrowDown":
         e.preventDefault();
-        setHighlightedTagIndex((prev) => (prev < suggestions.length - 1 ? prev + 1 : 0));
+        setHighlightedTagIndex((prev) =>
+          prev < suggestions.length - 1 ? prev + 1 : 0,
+        );
         break;
       case "ArrowUp":
         e.preventDefault();
-        setHighlightedTagIndex((prev) => (prev > 0 ? prev - 1 : suggestions.length - 1));
+        setHighlightedTagIndex((prev) =>
+          prev > 0 ? prev - 1 : suggestions.length - 1,
+        );
         break;
       case "Enter":
         e.preventDefault();
@@ -134,7 +161,7 @@ export default function SearchResultsPage() {
     setGroups((prev) =>
       prev
         .map((g) => ({ ...g, images: g.images.filter((img) => img.id !== id) }))
-        .filter((g) => g.images.length > 0)
+        .filter((g) => g.images.length > 0),
     );
   }, []);
 
@@ -142,7 +169,10 @@ export default function SearchResultsPage() {
    * Formats API error messages for display to users.
    * Translates error types into user-friendly messages.
    */
-  const formatErrorMessage = (errorType: string, backendMessage: string): string => {
+  const formatErrorMessage = (
+    errorType: string | undefined,
+    backendMessage: string,
+  ): string => {
     switch (errorType) {
       case "QUOTA_EXCEEDED":
         return "Visual search quota exceeded. Upgrade your plan to continue searching by image content.";
@@ -158,9 +188,9 @@ export default function SearchResultsPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-black text-white">
+    <div className="flex min-h-screen flex-col bg-black text-white">
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-black flex items-center gap-3 px-4 py-3 border-b border-neutral-900">
+      <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-neutral-900 bg-black px-4 py-3">
         <button onClick={() => router.back()} aria-label="Back">
           <ArrowLeft size={24} />
         </button>
@@ -169,15 +199,17 @@ export default function SearchResultsPage() {
 
       {/* Visual search query indicator */}
       {q && (
-        <div className="flex items-center gap-2 px-4 pt-3 pb-1">
-          <Search size={13} className="text-blue-400 flex-none" />
-          <span className="text-sm text-blue-400 font-medium truncate">"{q}"</span>
+        <div className="flex items-center gap-2 px-4 pb-1 pt-3">
+          <Search size={13} className="flex-none text-blue-400" />
+          <span className="truncate text-sm font-medium text-blue-400">
+            "{q}"
+          </span>
         </div>
       )}
 
       {/* Item count */}
       {!loading && (
-        <p className="px-4 pt-1 pb-1 text-sm text-gray-400">
+        <p className="px-4 pb-1 pt-1 text-sm text-gray-400">
           {totalCount} {totalCount === 1 ? "item" : "items"}
         </p>
       )}
@@ -186,15 +218,15 @@ export default function SearchResultsPage() {
       <div className="flex-1 pb-28">
         {loading ? (
           <div className="flex items-center justify-center py-24">
-            <p className="text-gray-400 text-sm">Loading…</p>
+            <p className="text-sm text-gray-400">Loading…</p>
           </div>
         ) : error ? (
-          <div className="flex items-center justify-center py-24 px-6">
-            <div className="max-w-sm text-center space-y-4">
-              <p className="text-red-400 text-sm">{error}</p>
+          <div className="flex items-center justify-center px-6 py-24">
+            <div className="max-w-sm space-y-4 text-center">
+              <p className="text-sm text-red-400">{error}</p>
               <button
                 onClick={() => router.back()}
-                className="text-blue-400 text-sm hover:text-blue-300"
+                className="text-sm text-blue-400 hover:text-blue-300"
               >
                 Go back and try again
               </button>
@@ -202,7 +234,7 @@ export default function SearchResultsPage() {
           </div>
         ) : groups.length === 0 ? (
           <div className="flex items-center justify-center py-24">
-            <p className="text-gray-400 text-sm">No results found</p>
+            <p className="text-sm text-gray-400">No results found</p>
           </div>
         ) : (
           groups.map((group) => (
@@ -220,23 +252,29 @@ export default function SearchResultsPage() {
       </div>
 
       {/* Bottom filter bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-black border-t border-neutral-900 px-4 pb-6 pt-3">
+      <div className="fixed bottom-0 left-0 right-0 border-t border-neutral-900 bg-black px-4 pb-6 pt-3">
         {/* Autocomplete suggestions */}
         {showSuggestions && suggestions.length > 0 && (
-          <div className="mb-2 bg-neutral-800 rounded-xl overflow-hidden shadow-lg" role="listbox">
+          <div
+            className="mb-2 overflow-hidden rounded-xl bg-neutral-800 shadow-lg"
+            role="listbox"
+          >
             {suggestions.slice(0, 5).map((tag, idx) => (
               <button
                 key={tag}
                 role="option"
                 aria-selected={highlightedTagIndex === idx}
-                onMouseDown={(e) => { e.preventDefault(); addTagFilter(tag); }}
-                className={`w-full text-left px-4 py-2.5 text-sm flex items-center gap-2 transition-colors ${
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  addTagFilter(tag);
+                }}
+                className={`flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm transition-colors ${
                   highlightedTagIndex === idx
                     ? "bg-blue-600/80 text-white"
                     : "text-gray-200 hover:bg-white/10"
                 }`}
               >
-                <Hash size={12} className="text-gray-500 flex-none" />
+                <Hash size={12} className="flex-none text-gray-500" />
                 {tag}
               </button>
             ))}
@@ -244,29 +282,44 @@ export default function SearchResultsPage() {
         )}
 
         {/* Active chips + input */}
-        <div className="flex flex-wrap items-center gap-2 bg-neutral-900 rounded-2xl px-3 py-2.5 min-h-[48px]">
+        <div className="flex min-h-[48px] flex-wrap items-center gap-2 rounded-2xl bg-neutral-900 px-3 py-2.5">
           {favourites && (
-            <span className="flex items-center gap-1 text-sm bg-neutral-700 rounded-full px-3 py-1 flex-none">
-              <Heart size={11} className="text-pink-400 fill-pink-400 flex-none" />
+            <span className="flex flex-none items-center gap-1 rounded-full bg-neutral-700 px-3 py-1 text-sm">
+              <Heart
+                size={11}
+                className="flex-none fill-pink-400 text-pink-400"
+              />
               Favourites
-              <button onClick={removeFavouritesFilter} aria-label="Remove favourites filter">
+              <button
+                onClick={removeFavouritesFilter}
+                aria-label="Remove favourites filter"
+              >
                 <X size={12} />
               </button>
             </span>
           )}
           {type && (
-            <span className="flex items-center gap-1 text-sm bg-neutral-700 rounded-full px-3 py-1 flex-none">
+            <span className="flex flex-none items-center gap-1 rounded-full bg-neutral-700 px-3 py-1 text-sm">
               {type}
-              <button onClick={removeTypeFilter} aria-label={`Remove ${type} filter`}>
+              <button
+                onClick={removeTypeFilter}
+                aria-label={`Remove ${type} filter`}
+              >
                 <X size={12} />
               </button>
             </span>
           )}
           {tags.map((t) => (
-            <span key={t} className="flex items-center gap-1 text-sm bg-neutral-700 rounded-full px-3 py-1 flex-none">
+            <span
+              key={t}
+              className="flex flex-none items-center gap-1 rounded-full bg-neutral-700 px-3 py-1 text-sm"
+            >
               <Hash size={11} className="text-gray-400" />
               {t}
-              <button onClick={() => removeTagFilter(t)} aria-label={`Remove ${t} filter`}>
+              <button
+                onClick={() => removeTagFilter(t)}
+                aria-label={`Remove ${t} filter`}
+              >
                 <X size={12} />
               </button>
             </span>
@@ -281,8 +334,10 @@ export default function SearchResultsPage() {
             onFocus={() => setShowSuggestions(true)}
             onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
             onKeyDown={handleTagKeyDown}
-            placeholder={tags.length === 0 && !type && !q ? "Filter by tag…" : "Add tag…"}
-            className="flex-1 min-w-[80px] bg-transparent outline-none text-white placeholder-gray-500 text-sm"
+            placeholder={
+              tags.length === 0 && !type && !q ? "Filter by tag…" : "Add tag…"
+            }
+            className="min-w-[80px] flex-1 bg-transparent text-sm text-white placeholder-gray-500 outline-none"
             role="combobox"
             aria-expanded={showSuggestions && suggestions.length > 0}
             aria-autocomplete="list"

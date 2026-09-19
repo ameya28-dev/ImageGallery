@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 interface ToastContextValue {
@@ -47,16 +41,16 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      {message && typeof window !== "undefined" && (
+      {message &&
+        typeof window !== "undefined" &&
         createPortal(
-          <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-[100]">
-            <div className="px-4 py-2.5 bg-surface-3 text-sm rounded-xl shadow-lg whitespace-nowrap">
+          <div className="fixed bottom-6 left-1/2 z-[100] -translate-x-1/2 transform">
+            <div className="whitespace-nowrap rounded-xl bg-surface-3 px-4 py-2.5 text-sm shadow-lg">
               {message}
             </div>
           </div>,
           document.body,
-        )
-      )}
+        )}
     </ToastContext.Provider>
   );
 }

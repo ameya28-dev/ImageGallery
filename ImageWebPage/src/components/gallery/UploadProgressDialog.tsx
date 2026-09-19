@@ -6,31 +6,40 @@ interface UploadProgressDialogProps {
   skipped: number;
 }
 
-export default function UploadProgressDialog({ current, total, skipped }: UploadProgressDialogProps) {
+export default function UploadProgressDialog({
+  current,
+  total,
+  skipped,
+}: UploadProgressDialogProps) {
   const pct = total > 0 ? Math.round((current / total) * 100) : 0;
 
   return (
-    <Modal open onClose={() => {}} className="w-80 bg-neutral-900 rounded-2xl p-6 flex flex-col gap-5">
+    <Modal
+      open
+      onClose={() => {}}
+      className="flex w-80 flex-col gap-5 rounded-2xl bg-neutral-900 p-6"
+    >
       <div className="flex flex-col gap-1">
-        <p className="text-white text-base font-semibold">Uploading photos…</p>
-        <p className="text-gray-400 text-sm">
+        <p className="text-base font-semibold text-white">Uploading photos…</p>
+        <p className="text-sm text-gray-400">
           {current} of {total} uploaded
         </p>
         {skipped > 0 && (
-          <p className="text-yellow-500 text-xs">
-            {skipped} {skipped === 1 ? 'file' : 'files'} skipped (duplicates or errors)
+          <p className="text-xs text-yellow-500">
+            {skipped} {skipped === 1 ? "file" : "files"} skipped (duplicates or
+            errors)
           </p>
         )}
       </div>
 
-      <div className="w-full h-1.5 bg-neutral-700 rounded-full overflow-hidden">
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-700">
         <div
-          className="h-full bg-blue-500 rounded-full transition-all duration-300"
+          className="h-full rounded-full bg-blue-500 transition-all duration-300"
           style={{ width: `${pct}%` }}
         />
       </div>
 
-      <p className="text-gray-500 text-xs text-right">{pct}%</p>
+      <p className="text-right text-xs text-gray-500">{pct}%</p>
     </Modal>
   );
 }

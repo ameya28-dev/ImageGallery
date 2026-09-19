@@ -27,10 +27,10 @@ export default function HomeGate() {
   // This prevents a brief flash of the landing page for a real owner on page refresh
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-black">
         <div className="text-center">
           <div className="inline-flex items-center gap-2 text-gray-400">
-            <div className="w-4 h-4 rounded-full bg-gray-600 animate-pulse" />
+            <div className="h-4 w-4 animate-pulse rounded-full bg-gray-600" />
             <span>Loading…</span>
           </div>
         </div>

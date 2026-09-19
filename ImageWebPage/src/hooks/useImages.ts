@@ -1,6 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback, Dispatch, SetStateAction } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  Dispatch,
+  SetStateAction,
+} from "react";
 import { ImageGroupDto } from "@/types";
 import { fetchImages } from "@/lib/api";
 
@@ -30,7 +36,9 @@ export function useImages(): UseImagesResult {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   return { groups, setGroups, loading, error, reload: load };
 }

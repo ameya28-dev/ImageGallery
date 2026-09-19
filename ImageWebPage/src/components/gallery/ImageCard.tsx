@@ -31,7 +31,9 @@ export default function ImageCard({
             e.stopPropagation();
             onToggleFavourite(image.id);
           }}
-          aria-label={image.favourite ? "Remove from favourites" : "Add to favourites"}
+          aria-label={
+            image.favourite ? "Remove from favourites" : "Add to favourites"
+          }
         >
           <Heart
             size={14}
@@ -44,19 +46,23 @@ export default function ImageCard({
 
       {/* Tag badge — bottom-left, hidden in selection mode */}
       {!selectionMode && (
-        <div className="absolute bottom-1.5 left-1.5 pointer-events-none">
+        <div className="pointer-events-none absolute bottom-1.5 left-1.5">
           {image.tags.length > 0 ? (
             /* Tagged: dark pill with count */
-            <span className="flex items-center gap-0.5 bg-black/60 backdrop-blur-sm text-white/90 rounded-full px-1.5 py-0.5 leading-none"
-                  style={{ fontSize: 9 }}>
+            <span
+              className="flex items-center gap-0.5 rounded-full bg-black/60 px-1.5 py-0.5 leading-none text-white/90 backdrop-blur-sm"
+              style={{ fontSize: 9 }}
+            >
               <Hash size={7} className="flex-none" />
               {image.tags.length}
             </span>
           ) : (
             /* Untagged: amber dot — "needs tagging" */
-            <span className="flex items-center bg-amber-400/90 text-black rounded-full px-1 py-0.5 leading-none"
-                  title="No tags yet"
-                  style={{ fontSize: 9 }}>
+            <span
+              className="flex items-center rounded-full bg-amber-400/90 px-1 py-0.5 leading-none text-black"
+              title="No tags yet"
+              style={{ fontSize: 9 }}
+            >
               <Hash size={7} className="flex-none" />
             </span>
           )}
@@ -67,7 +73,9 @@ export default function ImageCard({
       {selectionMode && (
         <div
           className={`img-select ${
-            selected ? "bg-cyan-400 border-cyan-400" : "border-white bg-black/30"
+            selected
+              ? "border-cyan-400 bg-cyan-400"
+              : "border-white bg-black/30"
           }`}
         >
           {selected && (

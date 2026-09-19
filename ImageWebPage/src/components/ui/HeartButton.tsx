@@ -6,12 +6,19 @@ interface HeartButtonProps {
   size?: number;
 }
 
-export default function HeartButton({ favourite, onToggle, size = 24 }: HeartButtonProps) {
+export default function HeartButton({
+  favourite,
+  onToggle,
+  size = 24,
+}: HeartButtonProps) {
   return (
     <button
-      onClick={(e) => { e.stopPropagation(); onToggle(e); }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onToggle(e);
+      }}
       aria-label={favourite ? "Remove from favourites" : "Add to favourites"}
-      className="p-1 rounded-full bg-black/30 hover:bg-black/50 transition-colors"
+      className="rounded-full bg-black/30 p-1 transition-colors hover:bg-black/50"
     >
       <svg
         width={size}

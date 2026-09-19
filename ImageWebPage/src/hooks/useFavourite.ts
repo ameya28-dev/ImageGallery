@@ -12,9 +12,9 @@ export function useFavourite(setGroups: SetGroups) {
       prev.map((group) => ({
         ...group,
         images: group.images.map((img) =>
-          img.id === imageId ? { ...img, favourite: !img.favourite } : img
+          img.id === imageId ? { ...img, favourite: !img.favourite } : img,
         ),
-      }))
+      })),
     );
 
     try {
@@ -24,9 +24,9 @@ export function useFavourite(setGroups: SetGroups) {
         prev.map((group) => ({
           ...group,
           images: group.images.map((img) =>
-            img.id === imageId ? { ...img, favourite: updated.favourite } : img
+            img.id === imageId ? { ...img, favourite: updated.favourite } : img,
           ),
-        }))
+        })),
       );
     } catch {
       // Revert on failure
@@ -34,9 +34,9 @@ export function useFavourite(setGroups: SetGroups) {
         prev.map((group) => ({
           ...group,
           images: group.images.map((img) =>
-            img.id === imageId ? { ...img, favourite: !img.favourite } : img
+            img.id === imageId ? { ...img, favourite: !img.favourite } : img,
           ),
-        }))
+        })),
       );
     }
   };

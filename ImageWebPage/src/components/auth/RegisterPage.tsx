@@ -61,14 +61,18 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-black">
+    <div className="flex min-h-screen items-center justify-center bg-black">
       <div className="w-full max-w-sm px-6">
-        <h1 className="text-3xl font-bold text-white mb-2 text-center">Gallery</h1>
-        <p className="text-gray-400 text-sm text-center mb-8">Create your account</p>
+        <h1 className="mb-2 text-center text-3xl font-bold text-white">
+          Gallery
+        </h1>
+        <p className="mb-8 text-center text-sm text-gray-400">
+          Create your account
+        </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="p-3 rounded-lg bg-red-900/20 border border-red-800 text-red-400 text-sm">
+            <div className="rounded-lg border border-red-800 bg-red-900/20 p-3 text-sm text-red-400">
               {error}
             </div>
           )}
@@ -78,7 +82,7 @@ export default function RegisterPage() {
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg bg-surface-2 text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400"
+            className="w-full rounded-lg bg-surface-2 px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-400"
             disabled={loading}
           />
 
@@ -88,7 +92,7 @@ export default function RegisterPage() {
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg bg-surface-2 text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400"
+              className="w-full rounded-lg bg-surface-2 px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-400"
               disabled={loading}
             />
             <button
@@ -107,7 +111,7 @@ export default function RegisterPage() {
               placeholder="Confirm Password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg bg-surface-2 text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400"
+              className="w-full rounded-lg bg-surface-2 px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-400"
               disabled={loading}
             />
             <button
@@ -123,13 +127,13 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-lg bg-white text-black text-sm font-medium hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full rounded-lg bg-white py-3 text-sm font-medium text-black transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? "Creating account…" : "Create account"}
           </button>
         </form>
 
-        <p className="text-gray-400 text-sm text-center mt-6">
+        <p className="mt-6 text-center text-sm text-gray-400">
           Already have an account?{" "}
           <Link href="/login" className="text-blue-400 hover:underline">
             Sign in

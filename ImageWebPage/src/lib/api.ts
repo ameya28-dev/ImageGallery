@@ -18,7 +18,12 @@ export class ApiError extends Error {
   public readonly errorType?: string;
   public readonly details?: Record<string, any>;
 
-  constructor(status: number, message: string, errorType?: string, details?: Record<string, any>) {
+  constructor(
+    status: number,
+    message: string,
+    errorType?: string,
+    details?: Record<string, any>,
+  ) {
     super(message);
     this.status = status;
     this.errorType = errorType;
@@ -54,7 +59,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       res.status,
       text || `HTTP ${res.status}`,
       errorType,
-      details
+      details,
     );
   }
   // Handle 204 No Content and other empty responses
@@ -64,7 +69,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export async function fetchImages(params?: { tag?: string; favourites?: boolean }): Promise<ImageGroupDto[]> {
+export async function fetchImages(params?: {
+  tag?: string;
+  favourites?: boolean;
+}): Promise<ImageGroupDto[]> {
   const query = new URLSearchParams();
   if (params?.tag) query.set("tag", params.tag);
   if (params?.favourites) query.set("favourites", "true");
@@ -84,10 +92,16 @@ export async function addTag(imageId: number, tag: string): Promise<ImageDto> {
   });
 }
 
-export async function removeTag(imageId: number, tagName: string): Promise<ImageDto> {
-  return request<ImageDto>(`/api/images/${imageId}/tags/${encodeURIComponent(tagName)}`, {
-    method: "DELETE",
-  });
+export async function removeTag(
+  imageId: number,
+  tagName: string,
+): Promise<ImageDto> {
+  return request<ImageDto>(
+    `/api/images/${imageId}/tags/${encodeURIComponent(tagName)}`,
+    {
+      method: "DELETE",
+    },
+  );
 }
 
 export async function fetchTags(prefix?: string): Promise<string[]> {
@@ -133,7 +147,7 @@ export async function uploadImage(file: File): Promise<ImageDto> {
       res.status,
       text || `HTTP ${res.status}`,
       errorType,
-      details
+      details,
     );
   }
 
@@ -172,7 +186,9 @@ export async function fetchFullImageBlob(id: number): Promise<string> {
     headers["Authorization"] = `Bearer ${_authToken}`;
   }
 
-  console.log(`[fetchFullImageBlob] Fetching id=${id}, token=${hasToken ? 'set' : 'NOT SET'}, url=${BASE}/api/images/${id}/full`);
+  console.log(
+    `[fetchFullImageBlob] Fetching id=${id}, token=${hasToken ? "set" : "NOT SET"}, url=${BASE}/api/images/${id}/full`,
+  );
 
   try {
     const res = await fetch(`${BASE}/api/images/${id}/full`, {
@@ -181,7 +197,9 @@ export async function fetchFullImageBlob(id: number): Promise<string> {
       credentials: "include",
     });
 
-    console.log(`[fetchFullImageBlob] Response: ${res.status} ${res.statusText}`);
+    console.log(
+      `[fetchFullImageBlob] Response: ${res.status} ${res.statusText}`,
+    );
 
     if (!res.ok) {
       let errorMsg = `HTTP ${res.status}`;
@@ -201,7 +219,10 @@ export async function fetchFullImageBlob(id: number): Promise<string> {
     console.error(`[fetchFullImageBlob] Error:`, e);
     if (e instanceof ApiError) throw e;
     // Network error or other fetch failure
-    throw new ApiError(0, `Failed to fetch full image: ${e instanceof Error ? e.message : String(e)}`);
+    throw new ApiError(
+      0,
+      `Failed to fetch full image: ${e instanceof Error ? e.message : String(e)}`,
+    );
   }
 }
 
@@ -217,7 +238,10 @@ export async function fetchThumbnailBlob(id: number): Promise<string> {
   }
   const res = await fetch(`${BASE}/api/images/${id}/thumbnail`, { headers });
   if (!res.ok) {
-    throw new ApiError(res.status, `Failed to load thumbnail: ${res.statusText}`);
+    throw new ApiError(
+      res.status,
+      `Failed to load thumbnail: ${res.statusText}`,
+    );
   }
   const blob = await res.blob();
   return URL.createObjectURL(blob);
@@ -247,7 +271,10 @@ export async function fetchSearchResults(params: {
   return request<ImageGroupDto[]>(`/api/images${qs}`);
 }
 
-export async function registerAccount(email: string, password: string): Promise<{ accessToken: string; email: string }> {
+export async function registerAccount(
+  email: string,
+  password: string,
+): Promise<{ accessToken: string; email: string }> {
   return request<{ accessToken: string; email: string }>("/api/auth/register", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -256,14 +283,16 @@ export async function registerAccount(email: string, password: string): Promise<
 }
 
 export async function importSeedImages(): Promise<ImageDto[]> {
-  return request<ImageDto[]>("/api/users/me/import-seed-images", { method: "POST" });
+  return request<ImageDto[]>("/api/users/me/import-seed-images", {
+    method: "POST",
+  });
 }
 
 /**
  * Checks if a filename is a video based on its extension
  */
 export function isVideoFile(filename: string): boolean {
-  const videoExtensions = ['mp4', 'mov', 'avi', 'mkv', 'm4v', 'wmv', 'webm'];
-  const ext = filename.split('.').pop()?.toLowerCase() || '';
+  const videoExtensions = ["mp4", "mov", "avi", "mkv", "m4v", "wmv", "webm"];
+  const ext = filename.split(".").pop()?.toLowerCase() || "";
   return videoExtensions.includes(ext);
 }

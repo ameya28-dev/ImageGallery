@@ -13,7 +13,12 @@ interface ModalProps {
 /**
  * Generic centered modal. Rendered at z-[60] so it sits above the lightbox (z-50).
  */
-export default function Modal({ open, onClose, children, className = "" }: ModalProps) {
+export default function Modal({
+  open,
+  onClose,
+  children,
+  className = "",
+}: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

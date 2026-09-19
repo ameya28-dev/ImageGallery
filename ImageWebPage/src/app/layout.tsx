@@ -8,10 +8,14 @@ export const metadata: Metadata = {
   description: "Your personal image gallery",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
-      <body className="bg-black text-white antialiased min-h-screen">
+      <body className="min-h-screen bg-black text-white antialiased">
         <ToastProvider>
           <AuthProvider>{children}</AuthProvider>
         </ToastProvider>

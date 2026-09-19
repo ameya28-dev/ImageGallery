@@ -14,11 +14,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class ScanController {
 
-    private final LocalImageScanner scanner;
+  private final LocalImageScanner scanner;
 
-    @PostMapping
-    public ResponseEntity<String> scan() {
-        scanner.scan();
-        return ResponseEntity.ok("Scan complete");
-    }
+  @PostMapping
+  public ResponseEntity<String> scan() {
+    scanner.scan();
+    return ResponseEntity.ok("Scan complete");
+  }
 }

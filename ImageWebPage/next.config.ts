@@ -8,7 +8,9 @@ const nextConfig: NextConfig = {
     unoptimized: true,
   },
   ...(isDev && {
-    allowedDevOrigins: ["192.168.1.*"],
+    allowedDevOrigins: [
+      "192.168.1.*", // WiFi IP testing
+    ],
   }),
 };
 

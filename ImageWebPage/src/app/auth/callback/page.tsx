@@ -20,8 +20,8 @@ function CallbackInner() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center">
-      <p className="text-gray-400 text-sm">Signing you in…</p>
+    <div className="flex min-h-screen items-center justify-center bg-black">
+      <p className="text-sm text-gray-400">Signing you in…</p>
     </div>
   );
 }

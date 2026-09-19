@@ -53,7 +53,10 @@ export function AuthedImage({ id, alt, className, loading }: AuthedImageProps) {
 
   return (
     <img
-      src={blobUrl || "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"}
+      src={
+        blobUrl ||
+        "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+      }
       alt={alt}
       className={className}
       loading={loading}
