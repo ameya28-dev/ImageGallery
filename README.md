@@ -2,7 +2,7 @@
 
 A modern, containerized **personal image gallery** with AI-powered visual search, tag-based filtering, and local storage. Built with **Spring Boot 3.5** (backend) and **Next.js 15** (frontend), orchestrated with **Docker Compose**.
 
-![Stack](https://img.shields.io/badge/Stack-Spring%20Boot%20%7C%20Next.js%20%7C%20Docker-blue) ![Java](https://img.shields.io/badge/Java-21-orange) ![Node](https://img.shields.io/badge/Node-20-green) ![Database](https://img.shields.io/badge/DB-SQLite-blue)
+![Stack](https://img.shields.io/badge/Stack-Spring%20Boot%20%7C%20Next.js%20%7C%20Docker-blue) ![Java](https://img.shields.io/badge/Java-25-orange) ![Node](https://img.shields.io/badge/Node-20-green) ![Database](https://img.shields.io/badge/DB-SQLite-blue)
 
 ## ✨ Features
 
@@ -138,7 +138,7 @@ cp .env.example .env
 ### Tech Stack
 
 **Backend**
-- Spring Boot 3.5 (Java 21)
+- Spring Boot 3.5 (Java 25)
 - SQLite (local profile) with Spring Data JPA
 - Anthropic Claude Vision API (optional, for AI descriptions)
 

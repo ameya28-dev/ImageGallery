@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **ImageGallery** is a containerized personal image gallery built with **Spring Boot 3.5** (backend) and **Next.js 15.5** (frontend), orchestrated via **Docker Compose**. It supports image/video uploads, AI-powered visual search (Claude Vision API), tagging, and multi-user authentication.
 
 **Key Tech Stack:**
-- Backend: Java 21, Spring Boot 3.5, JPA/Hibernate, FFmpeg (video processing)
+- Backend: Java 25, Spring Boot 3.5, JPA/Hibernate, FFmpeg (video processing)
 - Frontend: React 19, Next.js 15, TypeScript, Tailwind CSS
 - Database: SQLite (local) or PostgreSQL/RDS (feature)
 - Storage: Local filesystem (local) or AWS S3 (feature)

@@ -18,7 +18,7 @@
     <description>Image Gallery Application</description>
 
     <properties>
-        <java.version>21</java.version>
+        <java.version>25</java.version>
         <!-- Upgraded to patch transitive security vulnerabilities -->
         <aws.sdk.version>2.29.52</aws.sdk.version>
 <!--        <sqlite-jdbc.version>3.48.0.0</sqlite-jdbc.version>-->

@@ -38,7 +38,7 @@ ImageGallery/
 │   ├── feature-profile-setup.md # AWS + Feature profile complete setup guide
 │   └── search-setup.md          # Claude Vision API (visual/NL search) setup
 │
-├── ImageAPI/                    # Spring Boot 3.5 backend (Java 21)
+├── ImageAPI/                    # Spring Boot 3.5 backend (Java 25)
 │   ├── src/
 │   │   ├── main/
 │   │   │   ├── java/com/imagegallery/
@@ -251,7 +251,7 @@ docker cp imagegallery-backend-1:/app/data/gallery.db ./gallery.db.backup
 ### Docker Image Sizes
 
 Current optimized sizes:
-- **Backend**: ~592 MB (Spring Boot 3.5, Java 21, JRE)
+- **Backend**: ~592 MB (Spring Boot 3.5, Java 25, JRE)
 - **Frontend**: ~1.21 GB (Node 20, Next.js, all dependencies)
 - **nginx**: ~40 MB (Alpine Linux)
 

@@ -141,7 +141,7 @@ Edit `.tsx`/`.ts` files and save — the `next dev` server hot-reloads automatic
 ## What's Wired Up
 
 ### Containers
-- **backend** (Spring Boot 3.5.14, Java 21, SQLite)
+- **backend** (Spring Boot 3.5.14, Java 25, SQLite)
   - Port: 8080 (app), 5005 (JDWP debug)
   - Volumes: `ImageAPI/data/`, `ImageAPI/src/main/resources/{images,thumbnails}/` (bind-mounted from host)
   - Environment: `SPRING_PROFILES_ACTIVE=local`, JDWP agent enabled via `JAVA_TOOL_OPTIONS` (debug-only)

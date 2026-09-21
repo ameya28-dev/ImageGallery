@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ---- Build stage ----
-FROM maven:3.9-eclipse-temurin-21 AS build
+FROM maven:3.9-eclipse-temurin-25 AS build
 WORKDIR /build
 COPY pom.xml .
 RUN mvn -B -q dependency:go-offline
@@ -9,7 +9,7 @@ COPY src ./src
 RUN mvn -B -q -DskipTests package
 
 # ---- Runtime stage ----
-FROM eclipse-temurin:21-jre-jammy
+FROM eclipse-temurin:25-jre-jammy
 WORKDIR /app
 # Install FFmpeg for video frame extraction and metadata reading
 RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -rf /var/lib/apt/lists/*
