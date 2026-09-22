@@ -68,7 +68,7 @@ public class ImageController {
     }
 
     return ResponseEntity.ok()
-        .cacheControl(CacheControl.noCache().noStore().mustRevalidate())
+        .cacheControl(CacheControl.noStore().mustRevalidate())
         .body(results);
   }
 
@@ -76,7 +76,7 @@ public class ImageController {
   public ResponseEntity<Map<String, Long>> mediaCounts() {
     Long ownerId = resolveOwnerId();
     return ResponseEntity.ok()
-        .cacheControl(CacheControl.noCache().noStore().mustRevalidate())
+        .cacheControl(CacheControl.noStore().mustRevalidate())
         .body(imageService.getMediaCounts(ownerId));
   }
 

@@ -24,7 +24,7 @@ public class TagController {
   public ResponseEntity<List<String>> getTags(@RequestParam(required = false) String prefix) {
     Long ownerId = currentUserResolver.resolveOwnerId().orElse(null);
     return ResponseEntity.ok()
-        .cacheControl(CacheControl.noCache().noStore().mustRevalidate())
+        .cacheControl(CacheControl.noStore().mustRevalidate())
         .body(tagService.autocomplete(ownerId, prefix));
   }
 
@@ -32,7 +32,7 @@ public class TagController {
   public ResponseEntity<List<TagCountDto>> getRanked() {
     Long ownerId = currentUserResolver.resolveOwnerId().orElse(null);
     return ResponseEntity.ok()
-        .cacheControl(CacheControl.noCache().noStore().mustRevalidate())
+        .cacheControl(CacheControl.noStore().mustRevalidate())
         .body(tagService.getRanked(ownerId));
   }
 }
