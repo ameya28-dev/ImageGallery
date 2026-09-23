@@ -67,9 +67,7 @@ public class ImageController {
       results = imageService.getImages(ownerId, tag, tags, type, favourites);
     }
 
-    return ResponseEntity.ok()
-        .cacheControl(CacheControl.noStore().mustRevalidate())
-        .body(results);
+    return ResponseEntity.ok().cacheControl(CacheControl.noStore().mustRevalidate()).body(results);
   }
 
   @GetMapping("/counts")
